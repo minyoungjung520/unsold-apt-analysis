@@ -61,9 +61,11 @@ if search_btn:
                 "단지명": apt_name,
                 "소재지": location,
                 "검색일": str(date.today()),
-                "최초분양가_만원": 85000,
+                "최초분양일자": "2023-03-15",
+                "평형별분양가_만원": {"59㎡": 52000, "84㎡": 68000, "101㎡": 85000},
                 "전체세대수": 648,
                 "평형별세대수": {"59㎡": 200, "84㎡": 350, "101㎡": 98},
+                "평형별최초미분양": {"59㎡": 120, "84㎡": 180, "101㎡": 60},
                 "평형별미분양": {"59㎡": 85, "84㎡": 112, "101㎡": 30},
                 "미분양세대수": 227,
                 "미분양비율_퍼센트": 35,
@@ -86,18 +88,54 @@ if search_btn:
             st.divider()
 
             st.header("📊 단지 기본 정보")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("최초 분양가", f"{demo_data['최초분양가_만원']:,}만원")
-            c2.metric("전체 세대수", f"{demo_data['전체세대수']:,}세대")
-            c3.metric("미분양 세대", f"{demo_data['미분양세대수']}세대")
-            c4.metric("미분양 비율", f"{demo_data['미분양비율_퍼센트']}%")
 
-            st.subheader("평형별 세대수 / 미분양")
-            cols = st.columns(len(demo_data["평형별세대수"]))
-            for i, (size, count) in enumerate(demo_data["평형별세대수"].items()):
+            # 최초분양일자 + 전체세대수
+            c1, c2 = st.columns(2)
+            c1.metric("최초 분양일자", demo_data["최초분양일자"])
+            c2.metric("전체 세대수", f"{demo_data['전체세대수']:,}세대")
+
+            st.divider()
+
+            # 평형별 테이블
+            sizes = list(demo_data["평형별세대수"].keys())
+            st.subheader("평형별 상세 현황")
+
+            header_cols = st.columns(len(sizes) + 1)
+            header_cols[0].markdown("**구분**")
+            for i, size in enumerate(sizes):
+                header_cols[i+1].markdown(f"**{size}**")
+
+            # 최초분양가
+            row1 = st.columns(len(sizes) + 1)
+            row1[0].markdown("최초 분양가")
+            for i, size in enumerate(sizes):
+                price = demo_data["평형별분양가_만원"].get(size, 0)
+                row1[i+1].markdown(f"{price:,}만원")
+
+            # 전체세대수
+            row2 = st.columns(len(sizes) + 1)
+            row2[0].markdown("전체 세대수")
+            for i, size in enumerate(sizes):
+                count = demo_data["평형별세대수"].get(size, 0)
+                row2[i+1].markdown(f"{count}세대")
+
+            # 최초 미분양
+            row3 = st.columns(len(sizes) + 1)
+            row3[0].markdown("최초 미분양")
+            for i, size in enumerate(sizes):
+                count = demo_data["평형별세대수"].get(size, 0)
+                unsold = demo_data["평형별최초미분양"].get(size, 0)
+                pct = round(unsold / count * 100) if count > 0 else 0
+                row3[i+1].markdown(f"{unsold}세대 ({pct}%)")
+
+            # 현 미분양
+            row4 = st.columns(len(sizes) + 1)
+            row4[0].markdown("현 미분양")
+            for i, size in enumerate(sizes):
+                count = demo_data["평형별세대수"].get(size, 0)
                 unsold = demo_data["평형별미분양"].get(size, 0)
-                unsold_pct = round(unsold / count * 100) if count > 0 else 0
-                cols[i].metric(size, f"{count}세대", delta=f"미분양 {unsold}세대 ({unsold_pct}%)", delta_color="inverse")
+                pct = round(unsold / count * 100) if count > 0 else 0
+                row4[i+1].markdown(f"**{unsold}세대 ({pct}%)**")
 
             st.divider()
             st.header("💰 시세 참고")
