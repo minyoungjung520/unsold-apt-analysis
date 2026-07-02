@@ -39,21 +39,19 @@ st.title("🏢 미분양 아파트 감정가 적정성 분석")
 
 # 입력 섹션
 st.header("📋 단지 정보 입력")
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns([2, 2, 1])
 with col1:
     location = st.text_input("소재지", placeholder="예: 대구 수성구 범어동")
 with col2:
     apt_name = st.text_input("아파트명", placeholder="예: 범어자이")
 with col3:
-    area = st.selectbox("면적", ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "기타"])
-with col4:
-    appraisal_value = st.number_input("감정가 (만원)", min_value=0, step=100)
-
-search_btn = st.button("🔍 검색", type="primary", use_container_width=True)
+    st.markdown("<div style='margin-top:28px'>", unsafe_allow_html=True)
+    search_btn = st.button("🔍 검색", type="primary", use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 if search_btn:
-    if not location or not apt_name or not area or appraisal_value == 0:
-        st.warning("소재지, 아파트명, 감정가를 모두 입력해주세요.")
+    if not location or not apt_name:
+        st.warning("소재지와 아파트명을 입력해주세요.")
     else:
         with st.spinner("정보 수집 중..."):
             st.info("⚠️ 현재 데모 버전입니다. 실제 데이터 수집 기능은 추후 연동 예정입니다.")
@@ -63,8 +61,6 @@ if search_btn:
                 "단지명": apt_name,
                 "소재지": location,
                 "검색일": str(date.today()),
-                "면적": area,
-                "감정가_만원": appraisal_value,
                 "최초분양가_만원": 85000,
                 "전체세대수": 648,
                 "평형별세대수": {"59㎡": 200, "84㎡": 350, "101㎡": 98},
@@ -119,22 +115,8 @@ if search_btn:
                 st.write(f"- **{apt['단지명']}** ({apt['세대수']:,}세대) — 84㎡ 기준 {apt['84㎡시세_만원']:,}만원")
 
             st.divider()
-            st.header("🧠 감정가 적절성 의견")
-            discount_price = demo_data["할인후가격_만원"]
-            diff = appraisal_value - discount_price
-            diff_pct = round(diff / discount_price * 100, 1)
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("입력 감정가", f"{appraisal_value:,}만원")
-            c2.metric("시장 할인 후 가격", f"{discount_price:,}만원")
-            c3.metric("차이", f"{diff:+,}만원", delta=f"{diff_pct:+}%", delta_color="inverse")
-
-            if diff_pct > 10:
-                st.error(f"⚠️ **추가 감액 검토 권고**\n\n해당 단지는 미분양 비율 {demo_data['미분양비율_퍼센트']}%, 할인율 {demo_data['현재할인율_퍼센트']}% 수준입니다. 입력 감정가는 현 시장 할인가 대비 {diff_pct}% 높아 고평가 가능성이 있습니다. 인근 시세 및 미분양 추이를 고려한 추가 감액 검토를 권고합니다.")
-            elif diff_pct < -10:
-                st.success(f"✅ **감정가 적정 수준**\n\n입력 감정가는 현 시장 할인가 대비 {abs(diff_pct)}% 낮아 보수적으로 평가된 상태입니다.")
-            else:
-                st.warning(f"🟡 **감정가 시장 수준 근접**\n\n입력 감정가는 현 시장 할인가와 유사한 수준입니다. 미분양 추이 변화를 모니터링할 것을 권고합니다.")
+            st.header("🧠 종합 의견")
+            st.warning(f"해당 단지는 미분양 비율 {demo_data['미분양비율_퍼센트']}%, 할인율 {demo_data['현재할인율_퍼센트']}% 수준입니다. 최근 할인율 확대 추세와 인근 시세를 고려할 때 감정가 산정 시 추가 감액 검토를 권고합니다.")
 
             # 이력 저장
             save_history(demo_data)
