@@ -126,7 +126,7 @@ if search_btn:
                 count = demo_data["평형별세대수"].get(size, 0)
                 unsold = demo_data["평형별최초미분양"].get(size, 0)
                 pct = round(unsold / count * 100) if count > 0 else 0
-                row3[i+1].markdown(f"{unsold}세대 ({pct}%)")
+                row3[i+1].markdown(f"<span style='color:#1E90FF'>{unsold}세대 ({pct}%)</span>", unsafe_allow_html=True)
 
             # 현 미분양
             row4 = st.columns(len(sizes) + 1)
@@ -135,7 +135,7 @@ if search_btn:
                 count = demo_data["평형별세대수"].get(size, 0)
                 unsold = demo_data["평형별미분양"].get(size, 0)
                 pct = round(unsold / count * 100) if count > 0 else 0
-                row4[i+1].markdown(f"**{unsold}세대 ({pct}%)**")
+                row4[i+1].markdown(f"<span style='color:#1E90FF; font-weight:bold'>{unsold}세대 ({pct}%)</span>", unsafe_allow_html=True)
 
             st.divider()
             st.header("💰 시세 참고")
