@@ -17,7 +17,7 @@ def save_history(record):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
 
-st.set_page_config(page_title="미분양 아파트 감액가 판단 도구", layout="wide")
+st.set_page_config(page_title="미분양 아파트 감정가 적정성 분석", layout="wide")
 st.markdown("""
 <style>
 [data-testid="metric-container"] {
@@ -35,7 +35,7 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
-st.title("🏢 미분양 아파트 감액가 판단 보조 도구")
+st.title("🏢 미분양 아파트 감정가 적정성 분석")
 
 # 입력 섹션
 st.header("📋 단지 정보 입력")
