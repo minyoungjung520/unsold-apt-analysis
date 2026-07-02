@@ -139,9 +139,7 @@ if search_btn:
 
             st.divider()
             st.header("💰 시세 참고")
-            c1, c2 = st.columns(2)
-            c1.metric("현재 할인율", f"{demo_data['현재할인율_퍼센트']}%")
-            c2.metric("할인 후 가격", f"{demo_data['할인후가격_만원']:,}만원")
+            st.metric("현재 할인율", f"{demo_data['현재할인율_퍼센트']}%")
 
             st.subheader("할인가격 판단 근거")
             for src in demo_data["할인판단근거"]:
