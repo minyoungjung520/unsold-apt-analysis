@@ -148,7 +148,9 @@ if search_btn:
 
             st.subheader("인근 아파트 시세 (같은 동 세대수 상위 3개)")
             for apt in demo_data["인근아파트시세"]:
-                st.write(f"- **{apt['단지명']}** ({apt['세대수']:,}세대) — 84㎡ 기준 {apt['84㎡시세_만원']:,}만원")
+                price = apt["84㎡시세_만원"]
+                per_sqm = round(price / 84)
+                st.write(f"- **{apt['단지명']}** ({apt['세대수']:,}세대) — 84㎡ 기준 {price:,}만원 [㎡당 {per_sqm:,}만원]")
 
             st.divider()
             st.header("🧠 종합 의견")
