@@ -1,9 +1,11 @@
 import streamlit as st
 import json
 import os
+import requests
 from datetime import date
 
 DATA_FILE = "history.json"
+API_KEY = "249ddd18120a1443dc20fe3d9357df0242b922635e560f018de66870572b548d"
 
 def load_history():
     if os.path.exists(DATA_FILE):
@@ -16,6 +18,41 @@ def save_history(record):
     history.append(record)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
+
+def fetch_apt_info(apt_name):
+    url = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail"
+    headers = {"Authorization": f"Infuser {API_KEY}"}
+    params = {
+        "page": 1,
+        "perPage": 5,
+        "cond[HOUSE_NM::LIKE]": apt_name,
+        "returnType": "json"
+    }
+    res = requests.get(url, headers=headers, params=params, timeout=10)
+    res.raise_for_status()
+    data = res.json()
+    if data.get("currentCount", 0) == 0:
+        return None
+    # 정확히 일치하는 단지 우선, 없으면 첫 번째
+    for item in data["data"]:
+        if item.get("HOUSE_NM", "") == apt_name:
+            return item
+    return data["data"][0]
+
+def fetch_apt_model(house_manage_no, pblanc_no):
+    url = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl"
+    headers = {"Authorization": f"Infuser {API_KEY}"}
+    params = {
+        "page": 1,
+        "perPage": 50,
+        "cond[HOUSE_MANAGE_NO::EQ]": house_manage_no,
+        "cond[PBLANC_NO::EQ]": pblanc_no,
+        "returnType": "json"
+    }
+    res = requests.get(url, headers=headers, params=params, timeout=10)
+    res.raise_for_status()
+    data = res.json()
+    return data.get("data", [])
 
 st.set_page_config(page_title="미분양 아파트 감정가 적정성 분석", layout="wide")
 st.markdown("""
@@ -53,111 +90,96 @@ if search_btn:
     if not location or not apt_name:
         st.warning("소재지와 아파트명을 입력해주세요.")
     else:
-        with st.spinner("정보 수집 중..."):
-            st.info("⚠️ 현재 데모 버전입니다. 실제 데이터 수집 기능은 추후 연동 예정입니다.")
+        with st.spinner("청약홈 데이터 수집 중..."):
+            try:
+                apt_info = fetch_apt_info(apt_name)
 
-            # 데모 데이터
-            demo_data = {
-                "단지명": apt_name,
-                "소재지": location,
-                "검색일": str(date.today()),
-                "최초분양일자": "2023-03-15",
-                "평형별분양가_만원": {"59㎡": 52000, "84㎡": 68000, "101㎡": 85000},
-                "전체세대수": 648,
-                "평형별세대수": {"59㎡": 200, "84㎡": 350, "101㎡": 98},
-                "평형별최초미분양": {"59㎡": 120, "84㎡": 180, "101㎡": 60},
-                "평형별미분양": {"59㎡": 85, "84㎡": 112, "101㎡": 30},
-                "미분양세대수": 227,
-                "미분양비율_퍼센트": 35,
-                "현재할인율_퍼센트": 18,
-                "할인후가격_만원": 69700,
-                "할인판단근거": [
-                    {"출처유형": "뉴스", "매체": "OO일보", "제목": f"{apt_name} 미분양 18% 할인 분양 중", "날짜": "2026-06-10", "링크": "https://example.com/news1"},
-                    {"출처유형": "유튜브", "매체": "부동산스터디", "제목": f"[현장] {apt_name} 직접 가봤습니다", "날짜": "2026-06-05", "링크": "https://youtube.com/example"},
-                    {"출처유형": "블로그", "매체": "네이버 블로그", "제목": f"{apt_name} 실거주 후기 + 할인 조건 공개", "날짜": "2026-05-28", "링크": "https://blog.naver.com/example"},
-                ],
-                "인근아파트시세": [
-                    {"단지명": "인근A아파트", "세대수": 1200, "84㎡시세_만원": 72000},
-                    {"단지명": "인근B아파트", "세대수": 980, "84㎡시세_만원": 68000},
-                    {"단지명": "인근C아파트", "세대수": 750, "84㎡시세_만원": 65000},
-                ],
-            }
+                if not apt_info:
+                    st.error("해당 아파트 정보를 찾을 수 없습니다. 아파트명을 확인해주세요.")
+                else:
+                    house_manage_no = apt_info.get("HOUSE_MANAGE_NO", "")
+                    pblanc_no = apt_info.get("PBLANC_NO", "")
+                    models = fetch_apt_model(house_manage_no, pblanc_no)
 
-            # 결과 표시
-            st.success("수집 완료!")
-            st.divider()
+                    # 평형별 데이터 정리
+                    평형별세대수 = {}
+                    평형별분양가 = {}
+                    for m in models:
+                        house_type = m.get("HOUSE_TY", "")
+                        size = m.get("SUPLY_AR", "")
+                        if house_type:
+                            size_label = f"{house_type}({float(size):.1f}㎡)" if size else house_type
+                            평형별세대수[size_label] = int(m.get("SUPLY_HSHLDCO", 0) or 0)
+                            평형별분양가[size_label] = int(m.get("LTTOT_TOP_AMOUNT", 0) or 0)
 
-            st.header("📊 단지 기본 정보")
+                    전체세대수 = int(apt_info.get("TOT_SUPLY_HSHLDCO", 0) or 0)
+                    분양일자 = apt_info.get("RCRIT_PBLANC_DE", "-")
+                    주소 = apt_info.get("HSSPLY_ADRES", location)
 
-            # 최초분양일자 + 전체세대수
-            c1, c2 = st.columns(2)
-            c1.metric("최초 분양일자", demo_data["최초분양일자"])
-            c2.metric("전체 세대수", f"{demo_data['전체세대수']:,}세대")
+                    st.success(f"✅ '{apt_info.get('HOUSE_NM')}' 데이터 수집 완료!")
+                    st.divider()
 
-            st.divider()
+                    st.header("📊 단지 기본 정보")
+                    c1, c2 = st.columns(2)
+                    c1.metric("최초 분양일자", 분양일자)
+                    c2.metric("전체 세대수", f"{전체세대수:,}세대")
+                    st.caption(f"📍 {주소}")
 
-            # 평형별 테이블
-            sizes = list(demo_data["평형별세대수"].keys())
-            st.subheader("평형별 상세 현황")
+                    if 평형별세대수:
+                        st.divider()
+                        st.subheader("평형별 상세 현황")
+                        sizes = list(평형별세대수.keys())
 
-            header_cols = st.columns(len(sizes) + 1)
-            header_cols[0].markdown("**구분**")
-            for i, size in enumerate(sizes):
-                header_cols[i+1].markdown(f"**{size}**")
+                        header_cols = st.columns(len(sizes) + 1)
+                        header_cols[0].markdown("**구분**")
+                        for i, size in enumerate(sizes):
+                            header_cols[i+1].markdown(f"**{size}**")
 
-            # 최초분양가
-            row1 = st.columns(len(sizes) + 1)
-            row1[0].markdown("최초 분양가")
-            for i, size in enumerate(sizes):
-                price = demo_data["평형별분양가_만원"].get(size, 0)
-                row1[i+1].markdown(f"{price:,}만원")
+                        row1 = st.columns(len(sizes) + 1)
+                        row1[0].markdown("최초 분양가")
+                        for i, size in enumerate(sizes):
+                            price = 평형별분양가.get(size, 0)
+                            row1[i+1].markdown(f"{price:,}만원" if price else "-")
 
-            # 전체세대수
-            row2 = st.columns(len(sizes) + 1)
-            row2[0].markdown("전체 세대수")
-            for i, size in enumerate(sizes):
-                count = demo_data["평형별세대수"].get(size, 0)
-                row2[i+1].markdown(f"{count}세대")
+                        row2 = st.columns(len(sizes) + 1)
+                        row2[0].markdown("전체 세대수")
+                        for i, size in enumerate(sizes):
+                            count = 평형별세대수.get(size, 0)
+                            row2[i+1].markdown(f"{count}세대")
 
-            # 최초 미분양
-            row3 = st.columns(len(sizes) + 1)
-            row3[0].markdown("최초 미분양")
-            for i, size in enumerate(sizes):
-                count = demo_data["평형별세대수"].get(size, 0)
-                unsold = demo_data["평형별최초미분양"].get(size, 0)
-                pct = round(unsold / count * 100) if count > 0 else 0
-                row3[i+1].markdown(f"<span style='color:#1E90FF'>{unsold}세대 ({pct}%)</span>", unsafe_allow_html=True)
+                        row3 = st.columns(len(sizes) + 1)
+                        row3[0].markdown("최초 미분양")
+                        for i, size in enumerate(sizes):
+                            row3[i+1].markdown("<span style='color:#1E90FF'>-</span>", unsafe_allow_html=True)
 
-            # 현 미분양
-            row4 = st.columns(len(sizes) + 1)
-            row4[0].markdown("현 미분양")
-            for i, size in enumerate(sizes):
-                count = demo_data["평형별세대수"].get(size, 0)
-                unsold = demo_data["평형별미분양"].get(size, 0)
-                pct = round(unsold / count * 100) if count > 0 else 0
-                row4[i+1].markdown(f"<span style='color:#1E90FF; font-weight:bold'>{unsold}세대 ({pct}%)</span>", unsafe_allow_html=True)
+                        row4 = st.columns(len(sizes) + 1)
+                        row4[0].markdown("현 미분양")
+                        for i, size in enumerate(sizes):
+                            row4[i+1].markdown("<span style='color:#1E90FF; font-weight:bold'>-</span>", unsafe_allow_html=True)
 
-            st.divider()
-            st.header("💰 시세 참고")
-            st.metric("현재 할인율", f"{demo_data['현재할인율_퍼센트']}%")
+                    st.divider()
+                    st.header("💰 시세 참고")
+                    st.metric("현재 할인율", "-")
+                    st.caption("※ 할인율 및 인근 시세는 추후 연동 예정")
 
-            st.subheader("할인가격 판단 근거")
-            for src in demo_data["할인판단근거"]:
-                icon = "📰" if src["출처유형"] == "뉴스" else ("▶️" if src["출처유형"] == "유튜브" else "📝")
-                st.markdown(f"{icon} **[{src['매체']}]** [{src['제목']}]({src['링크']}) — {src['날짜']}")
+                    st.divider()
+                    st.header("🧠 종합 의견")
+                    st.info("수집된 데이터를 바탕으로 종합 의견을 제공할 예정입니다.")
 
-            st.subheader("인근 아파트 시세 (같은 동 세대수 상위 3개)")
-            for apt in demo_data["인근아파트시세"]:
-                price = apt["84㎡시세_만원"]
-                per_sqm = round(price / 84)
-                st.write(f"- **{apt['단지명']}** ({apt['세대수']:,}세대) — 84㎡ 기준 {price:,}만원 [㎡당 {per_sqm:,}만원]")
+                    # 이력 저장
+                    record = {
+                        "단지명": apt_info.get("HOUSE_NM", apt_name),
+                        "소재지": 주소,
+                        "검색일": str(date.today()),
+                        "최초분양일자": 분양일자,
+                        "전체세대수": 전체세대수,
+                        "평형별세대수": 평형별세대수,
+                        "평형별분양가_만원": 평형별분양가,
+                    }
+                    save_history(record)
 
-            st.divider()
-            st.header("🧠 종합 의견")
-            st.warning(f"해당 단지는 미분양 비율 {demo_data['미분양비율_퍼센트']}%, 할인율 {demo_data['현재할인율_퍼센트']}% 수준입니다. 최근 할인율 확대 추세와 인근 시세를 고려할 때 감정가 산정 시 추가 감액 검토를 권고합니다.")
-
-            # 이력 저장
-            save_history(demo_data)
+            except Exception as e:
+                st.error(f"데이터 수집 중 오류가 발생했습니다: {e}")
 
 # 이력 섹션
 st.divider()
