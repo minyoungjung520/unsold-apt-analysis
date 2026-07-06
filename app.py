@@ -39,6 +39,32 @@ def fetch_apt_info(apt_name):
             return item
     return data["data"][0]
 
+def fetch_apt_cmpet(house_manage_no, pblanc_no):
+    url = "https://api.odcloud.kr/api/ApplyhomeInfoCmpetRtSvc/v1/getAPTLttotPblancCmpet"
+    headers = {"Authorization": f"Infuser {API_KEY}"}
+    params = {
+        "page": 1,
+        "perPage": 100,
+        "cond[HOUSE_MANAGE_NO::EQ]": house_manage_no,
+        "cond[PBLANC_NO::EQ]": pblanc_no,
+        "returnType": "json"
+    }
+    res = requests.get(url, headers=headers, params=params, timeout=10)
+    res.raise_for_status()
+    return res.json().get("data", [])
+
+def calc_initial_unsold(cmpet_data, house_ty, suply_hshldco):
+    # △숫자 형태에서 미달 세대수 추출
+    import re
+    unsold = 0
+    for item in cmpet_data:
+        if item.get("HOUSE_TY", "").strip() == house_ty.strip():
+            rate = item.get("CMPET_RATE", "")
+            match = re.search(r'△(\d+)', rate)
+            if match:
+                unsold = max(unsold, int(match.group(1)))
+    return unsold
+
 def fetch_apt_model(house_manage_no, pblanc_no):
     url = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl"
     headers = {"Authorization": f"Infuser {API_KEY}"}
@@ -100,17 +126,24 @@ if search_btn:
                     house_manage_no = apt_info.get("HOUSE_MANAGE_NO", "")
                     pblanc_no = apt_info.get("PBLANC_NO", "")
                     models = fetch_apt_model(house_manage_no, pblanc_no)
+                    cmpet_data = fetch_apt_cmpet(house_manage_no, pblanc_no)
 
                     # 평형별 데이터 정리
                     평형별세대수 = {}
                     평형별분양가 = {}
+                    평형별최초미분양 = {}
+                    평형별타입키 = {}
                     for m in models:
                         house_type = m.get("HOUSE_TY", "")
                         size = m.get("SUPLY_AR", "")
                         if house_type:
                             size_label = f"{house_type}({float(size):.1f}㎡)" if size else house_type
-                            평형별세대수[size_label] = int(m.get("SUPLY_HSHLDCO", 0) or 0)
+                            count = int(m.get("SUPLY_HSHLDCO", 0) or 0)
+                            평형별세대수[size_label] = count
                             평형별분양가[size_label] = int(m.get("LTTOT_TOP_AMOUNT", 0) or 0)
+                            평형별타입키[size_label] = house_type
+                            unsold = calc_initial_unsold(cmpet_data, house_type, count)
+                            평형별최초미분양[size_label] = unsold
 
                     전체세대수 = int(apt_info.get("TOT_SUPLY_HSHLDCO", 0) or 0)
                     분양일자 = apt_info.get("RCRIT_PBLANC_DE", "-")
@@ -150,7 +183,13 @@ if search_btn:
                         row3 = st.columns(len(sizes) + 1)
                         row3[0].markdown("최초 미분양")
                         for i, size in enumerate(sizes):
-                            row3[i+1].markdown("<span style='color:#1E90FF'>-</span>", unsafe_allow_html=True)
+                            count = 평형별세대수.get(size, 0)
+                            unsold = 평형별최초미분양.get(size, 0)
+                            pct = round(unsold / count * 100, 1) if count > 0 else 0
+                            if unsold > 0:
+                                row3[i+1].markdown(f"<span style='color:#1E90FF'>{unsold}세대 ({pct}%)</span>", unsafe_allow_html=True)
+                            else:
+                                row3[i+1].markdown("<span style='color:#1E90FF'>-</span>", unsafe_allow_html=True)
 
                         row4 = st.columns(len(sizes) + 1)
                         row4[0].markdown("현 미분양")
