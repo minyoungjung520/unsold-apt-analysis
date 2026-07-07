@@ -102,11 +102,13 @@ def fetch_naver_search(query, search_type="news", display=5):
     result = []
     for item in items:
         title = re.sub(r"<[^>]+>", "", item.get("title", ""))
+        desc = re.sub(r"<[^>]+>", "", item.get("description", ""))
         result.append({
             "제목": title,
             "링크": item.get("link", ""),
             "날짜": item.get("pubDate", item.get("postdate", "")),
             "출처": item.get("bloggername", item.get("originallink", "")),
+            "설명": desc,
         })
     return result
 
@@ -650,6 +652,10 @@ if search_btn:
                             st.caption(fallback_msg("동영상"))
                         for item in vclip_list:
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {item['날짜']}")
+                            desc = item.get("설명", "").strip()
+                            if desc:
+                                lines = [l.strip() for l in desc.splitlines() if l.strip()][:3]
+                                st.caption("  \n".join(lines))
                     else:
                         st.caption("네이버 동영상 결과 없음")
                     st.markdown(f"🔗 [유튜브에서 직접 검색하기]({youtube_url})")
