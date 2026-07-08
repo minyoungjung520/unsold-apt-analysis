@@ -787,8 +787,8 @@ if search_btn:
                             opinion_text = (
                                 f"**[감정가 입력값: {appraisal:,}만원 기준 적정성 판단]**  \n"
                                 f"- 인근 실거래 평균 {avg_price:,}만원 → 감정가가 시세 대비 {sign}{gap_pct}% ({gap_label})  \n"
-                                f"- 리스크 등급: **{grade}** → 추가 조정 권고 -{adj_low}~{adj_high}%  \n"
-                                f"- 최종 권장: 감정가 대비 추가 {adj_low}~{adj_high}% 하향 검토 (조정 후 약 **{final_low:,}~{final_high:,}만원**)  \n"
+                                f"- 리스크 등급: **{grade}** → 추가 조정 권고 -{adj_low}%-{adj_high}%  \n"
+                                f"- 최종 권장: 감정가 대비 추가 {adj_low}%-{adj_high}% 하향 검토 (조정 후 약 **{final_low:,}만원-{final_high:,}만원**)  \n"
                                 f"- 근거: {근거_str}"
                             )
                     elif avg_price > 0:
@@ -805,9 +805,9 @@ if search_btn:
                         else:
                             opinion_text = (
                                 f"**[감정가 미입력 - 참고 시세 제시]**  \n"
-                                f"- 인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}~{max_price:,}만원)  \n"
+                                f"- 인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}만원-{max_price:,}만원)  \n"
                                 f"- 미분양/시장 신호 등급: **{grade}** ({grade_desc})  \n"
-                                f"- 권장 감정가 참고 레인지: **{ref_low:,}~{ref_high:,}만원** (실거래 평균 대비 {adj_low}~{adj_high}% 하향 적용, 미분양 리스크 반영)  \n"
+                                f"- 권장 감정가 참고 레인지: **{ref_low:,}만원-{ref_high:,}만원** (실거래 평균 대비 {adj_low}%-{adj_high}% 하향 적용, 미분양 리스크 반영)  \n"
                                 f"- 근거: {근거_str}  \n"
                                 f"※ 감정가를 입력하시면 해당 값 대비 적정성을 판단해 드립니다."
                             )
