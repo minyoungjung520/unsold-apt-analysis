@@ -819,6 +819,7 @@ if search_btn:
                         )
 
                     st.warning(opinion_text)
+                    st.caption("※ 자동 산출은 참고자료이며 최종 판단이 아닙니다.")
 
                     with st.expander("점수 산출 근거 보기"):
                         for d in score_detail:
