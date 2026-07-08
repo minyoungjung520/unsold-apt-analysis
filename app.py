@@ -618,12 +618,15 @@ if search_btn:
                     def blue_caption(text):
                         st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{text}</span>", unsafe_allow_html=True)
 
+                    def black_caption(text):
+                        st.markdown(f"<span style='color:#222222; font-size:0.85rem'>{text}</span>", unsafe_allow_html=True)
+
                     fallback_msg = lambda label: f"※ '{house_nm}' 직접 관련 {label}가 없어 {sido} {sigungu} 지역 결과를 표시합니다."
 
                     if news_list:
                         st.subheader("관련 뉴스")
                         if not news_is_exact:
-                            blue_caption(fallback_msg("기사"))
+                            black_caption(fallback_msg("기사"))
                         for item in news_list:
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {item['날짜']}")
                     else:
@@ -632,7 +635,7 @@ if search_btn:
                     if blog_list:
                         st.subheader("관련 블로그")
                         if not blog_is_exact:
-                            blue_caption(fallback_msg("블로그"))
+                            black_caption(fallback_msg("블로그"))
                         for item in blog_list:
                             label = f"{item['출처']} — " if item['출처'] else ""
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {label}{item['날짜']}")
@@ -642,7 +645,7 @@ if search_btn:
                     if cafe_list:
                         st.subheader("관련 카페")
                         if not cafe_is_exact:
-                            blue_caption(fallback_msg("카페글"))
+                            black_caption(fallback_msg("카페글"))
                         for item in cafe_list:
                             label = f"{item['출처']} — " if item['출처'] else ""
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {label}{item['날짜']}")
@@ -660,7 +663,7 @@ if search_btn:
                                 lines = [l.strip() for l in desc.splitlines() if l.strip()][:3]
                                 st.caption("  \n".join(lines))
                     else:
-                        st.caption("네이버 동영상 결과 없음")
+                        black_caption("※ 네이버 동영상 결과 없음")
                     st.markdown(f"🔗 [유튜브에서 직접 검색하기]({youtube_url})")
 
                     st.header("종합 의견")
@@ -746,7 +749,7 @@ if search_btn:
 
                     # ── 출력 ─────────────────────────────────────────
                     g1, g2, g3 = st.columns([1, 2, 3])
-                    g1.markdown(f"<div style='text-align:center; background:{grade_color}; color:white; border-radius:12px; padding:18px 0; font-size:2.5rem; font-weight:900'>{grade}</div><div style='text-align:center; font-size:0.8rem; color:#666; margin-top:6px'>리스크 등급 (총점 {score}점)</div>", unsafe_allow_html=True)
+                    g1.markdown(f"<div style='text-align:center; background:{grade_color}; color:white; border-radius:12px; padding:18px 0; font-size:2.5rem; font-weight:900'>{grade}</div><div style='text-align:center; font-size:1.0rem; font-weight:700; color:#333; margin-top:8px'>리스크 등급 (총점 {score}점)</div>", unsafe_allow_html=True)
 
                     if avg_price > 0:
                         g2.metric("인근 평균 실거래가", f"{avg_price:,}만원", f"범위 {min_price:,}~{max_price:,}만원")
