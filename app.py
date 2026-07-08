@@ -549,7 +549,7 @@ if search_btn:
                     dong = location_parts[2] if len(location_parts) > 2 else ""
                     if lawd_cd and dong:
                         st.header("인근 아파트 시세")
-                        st.caption(f"{sido} {sigungu} {dong} · 84㎡ 기준 · 최근 3개월 실거래 · 거래건수 상위 5개")
+                        st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{sido} {sigungu} {dong} · 84㎡ 기준 · 최근 3개월 실거래 · 거래건수 상위 5개</span>", unsafe_allow_html=True)
                         area_low = target_area - 5
                         area_high = target_area + 5
                         with st.spinner("인근 시세 조회 중..."):
@@ -562,7 +562,7 @@ if search_btn:
                             )
                             df_nearby = df_nearby[["아파트","전용면적(㎡)","거래금액","최근거래일","거래건수"]]
                             df_nearby.index = range(1, len(df_nearby) + 1)
-                            st.caption(f"{sido} {sigungu} {dong} · {target_area:.0f}㎡ 기준(±5㎡) · 최근 3개월 실거래 · 거래건수 상위 5개")
+                            st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{sido} {sigungu} {dong} · {target_area:.0f}㎡ 기준(±5㎡) · 최근 3개월 실거래 · 거래건수 상위 5개</span>", unsafe_allow_html=True)
                             st.dataframe(df_nearby, use_container_width=True)
                         else:
                             st.info(f"{dong} 내 {target_area:.0f}㎡ 근처 최근 실거래 내역이 없습니다.")
@@ -573,7 +573,7 @@ if search_btn:
                         기준월 = sido_summary["기준월"]
                         기준월_str = f"{기준월[:4]}년 {기준월[4:]}월" if 기준월 else ""
                         st.header("지역 미분양 현황")
-                        st.caption(f"기준: {기준월_str} · 국토교통부 통계")
+                        st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>기준: {기준월_str} · 국토교통부 통계</span>", unsafe_allow_html=True)
 
                         label_style = "font-size:1.15rem; font-weight:600; margin-bottom:4px"
                         value_style = "font-size:1.15rem; font-weight:700"
@@ -615,41 +615,44 @@ if search_btn:
 
                     st.header("할인 판단 근거")
 
+                    def blue_caption(text):
+                        st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{text}</span>", unsafe_allow_html=True)
+
                     fallback_msg = lambda label: f"※ '{house_nm}' 직접 관련 {label}가 없어 {sido} {sigungu} 지역 결과를 표시합니다."
 
                     if news_list:
                         st.subheader("관련 뉴스")
                         if not news_is_exact:
-                            st.caption(fallback_msg("기사"))
+                            blue_caption(fallback_msg("기사"))
                         for item in news_list:
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {item['날짜']}")
                     else:
-                        st.caption("관련 뉴스를 찾지 못했습니다.")
+                        blue_caption("관련 뉴스를 찾지 못했습니다.")
 
                     if blog_list:
                         st.subheader("관련 블로그")
                         if not blog_is_exact:
-                            st.caption(fallback_msg("블로그"))
+                            blue_caption(fallback_msg("블로그"))
                         for item in blog_list:
                             label = f"{item['출처']} — " if item['출처'] else ""
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {label}{item['날짜']}")
                     else:
-                        st.caption("관련 블로그를 찾지 못했습니다.")
+                        blue_caption("관련 블로그를 찾지 못했습니다.")
 
                     if cafe_list:
                         st.subheader("관련 카페")
                         if not cafe_is_exact:
-                            st.caption(fallback_msg("카페글"))
+                            blue_caption(fallback_msg("카페글"))
                         for item in cafe_list:
                             label = f"{item['출처']} — " if item['출처'] else ""
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {label}{item['날짜']}")
                     else:
-                        st.caption("관련 카페글을 찾지 못했습니다.")
+                        blue_caption("관련 카페글을 찾지 못했습니다.")
 
                     st.subheader("유튜브")
                     if vclip_list:
                         if not vclip_is_exact:
-                            st.caption(fallback_msg("동영상"))
+                            blue_caption(fallback_msg("동영상"))
                         for item in vclip_list:
                             st.markdown(f"- [{item['제목']}]({item['링크']}) — {item['날짜']}")
                             desc = item.get("설명", "").strip()
