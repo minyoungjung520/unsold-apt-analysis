@@ -754,23 +754,69 @@ if search_btn:
                     st.markdown("---")
 
                     # 의견 문구
+                    gap_label = ""
+                    if gap_pct is not None:
+                        if gap_pct > 3:
+                            gap_label = "높음, 조정 필요"
+                        elif gap_pct > -3:
+                            gap_label = "시세 근접, 정상 범위"
+                        else:
+                            gap_label = "낮음, 정상 범위"
+
+                    근거_parts = []
+                    if 미분양비율 > 0:
+                        근거_parts.append(f"최초 미분양율 {미분양비율}%")
+                    if keyword_hits > 0:
+                        근거_parts.append(f"할인 관련 기사/글 {keyword_hits}건")
+                    if elapsed_months > 0:
+                        근거_parts.append(f"경과기간 {elapsed_months}개월")
+                    근거_str = ", ".join(근거_parts) if 근거_parts else "수집된 정성 시그널 없음"
+
                     if appraisal > 0 and avg_price > 0:
+                        final_low = round(appraisal * (1 - adj_high / 100))
+                        final_high = round(appraisal * (1 - adj_low / 100))
+                        sign = "+" if gap_pct >= 0 else ""
+                        if grade == "A":
+                            opinion_text = (
+                                f"**[감정가 입력값: {appraisal:,}만원 기준 적정성 판단]**  \n"
+                                f"- 인근 실거래 평균 {avg_price:,}만원 → 감정가가 시세 대비 {sign}{gap_pct}% ({gap_label})  \n"
+                                f"- 리스크 등급: **{grade}** → 추가 조정 불필요  \n"
+                                f"- 근거: {근거_str}"
+                            )
+                        else:
+                            opinion_text = (
+                                f"**[감정가 입력값: {appraisal:,}만원 기준 적정성 판단]**  \n"
+                                f"- 인근 실거래 평균 {avg_price:,}만원 → 감정가가 시세 대비 {sign}{gap_pct}% ({gap_label})  \n"
+                                f"- 리스크 등급: **{grade}** → 추가 조정 권고 -{adj_low}~{adj_high}%  \n"
+                                f"- 최종 권장: 감정가 대비 추가 {adj_low}~{adj_high}% 하향 검토 (조정 후 약 **{final_low:,}~{final_high:,}만원**)  \n"
+                                f"- 근거: {근거_str}"
+                            )
+                    elif avg_price > 0:
                         ref_low = round(avg_price * (1 - adj_high / 100))
                         ref_high = round(avg_price * (1 - adj_low / 100))
                         if grade == "A":
-                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 {avg_price:,}만원 대비 감정가 {appraisal:,}만원({'+' if gap_pct>=0 else ''}{gap_pct}%)으로 **적정 수준**입니다. 추가 감액 없이 심사 진행 가능합니다."
+                            opinion_text = (
+                                f"**[감정가 미입력 - 참고 시세 제시]**  \n"
+                                f"- 인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}~{max_price:,}만원)  \n"
+                                f"- 미분양/시장 신호 등급: **{grade}** — {grade_desc}  \n"
+                                f"- 근거: {근거_str}  \n"
+                                f"※ 감정가를 입력하시면 해당 값 대비 적정성을 판단해 드립니다."
+                            )
                         else:
-                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 {avg_price:,}만원 대비 감정가 {appraisal:,}만원({'+' if gap_pct>=0 else ''}{gap_pct}%)으로 **{grade_desc}** 수준입니다.  \n권장 감정가 참고 레인지: **{ref_low:,}~{ref_high:,}만원** (실거래 평균 대비 {adj_low}~{adj_high}% 하향 적용, 미분양 리스크 반영)"
-                    elif avg_price > 0:
-                        if grade == "A":
-                            ref_low = ref_high = avg_price
-                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}~{max_price:,}만원)  \n미분양/시장 신호 등급: **{grade}** — {grade_desc}  \n※ 감정가를 입력하시면 해당 값 대비 적정성을 판단해 드립니다."
-                        else:
-                            ref_low = round(avg_price * (1 - adj_high / 100))
-                            ref_high = round(avg_price * (1 - adj_low / 100))
-                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}~{max_price:,}만원)  \n미분양/시장 신호 등급: **{grade}** — {grade_desc}  \n권장 감정가 참고 레인지: **{ref_low:,}~{ref_high:,}만원** (실거래 평균 대비 {adj_low}~{adj_high}% 하향 적용, 미분양 리스크 반영)  \n※ 감정가를 입력하시면 해당 값 대비 적정성을 판단해 드립니다."
+                            opinion_text = (
+                                f"**[감정가 미입력 - 참고 시세 제시]**  \n"
+                                f"- 인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}~{max_price:,}만원)  \n"
+                                f"- 미분양/시장 신호 등급: **{grade}** ({grade_desc})  \n"
+                                f"- 권장 감정가 참고 레인지: **{ref_low:,}~{ref_high:,}만원** (실거래 평균 대비 {adj_low}~{adj_high}% 하향 적용, 미분양 리스크 반영)  \n"
+                                f"- 근거: {근거_str}  \n"
+                                f"※ 감정가를 입력하시면 해당 값 대비 적정성을 판단해 드립니다."
+                            )
                     else:
-                        opinion_text = f"미분양/시장 신호 등급: **{grade}** ({grade_desc})  \n인근 실거래 데이터가 부족하여 시세 비교가 어렵습니다. 감정가와 면적을 입력 후 재검색해 주세요."
+                        opinion_text = (
+                            f"- 미분양/시장 신호 등급: **{grade}** ({grade_desc})  \n"
+                            f"- 근거: {근거_str}  \n"
+                            f"인근 실거래 데이터가 부족하여 시세 비교가 어렵습니다. 감정가와 면적을 입력 후 재검색해 주세요."
+                        )
 
                     st.warning(opinion_text)
 
