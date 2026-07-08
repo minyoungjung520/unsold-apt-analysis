@@ -819,7 +819,13 @@ if search_btn:
                         )
 
                     st.warning(opinion_text)
-                    st.caption("※ 자동 산출은 참고자료이며 최종 판단이 아닙니다.")
+                    st.markdown(
+                        "<div style='border-left:4px solid #1428A0; background:#f0f4ff; padding:12px 16px; border-radius:6px; margin-top:8px'>"
+                        "<span style='color:#1428A0; font-weight:700'>⚠️ 본 결과는 자동 산출된 참고자료이며 최종 판단이 아닙니다.</span><br>"
+                        "<span style='color:#1428A0; font-weight:600'>담당자의 정성적 검토 및 최신 미분양 현황(관할 시청 등) 확인 후 최종 결정하시기 바랍니다.</span>"
+                        "</div>",
+                        unsafe_allow_html=True
+                    )
 
                     with st.expander("점수 산출 근거 보기"):
                         for d in score_detail:
