@@ -663,36 +663,120 @@ if search_btn:
                     st.header("종합 의견")
                     총최초미분양 = sum(평형별최초미분양.values())
                     미분양비율 = round(총최초미분양 / 전체세대수 * 100, 1) if 전체세대수 > 0 else 0
-                    opinion_parts = []
 
-                    # 감정가 vs 인근 시세 비교
-                    if appraisal > 0 and nearby:
+                    # 인근 시세 평균/범위
+                    avg_price = min_price = max_price = 0
+                    if nearby:
                         prices = [x["거래금액(만원)"] for x in nearby]
                         avg_price = round(sum(prices) / len(prices))
-                        diff = appraisal - avg_price
-                        diff_pct = round(diff / avg_price * 100, 1)
-                        if diff_pct > 5:
-                            opinion_parts.append(f"인근 {target_area:.0f}㎡ 평균 시세 {avg_price:,}만원 대비 입력 감정가 {appraisal:,}만원으로 **약 {diff_pct}% 고평가** 가능성 — 추가 감액 검토 권고.")
-                        elif diff_pct < -5:
-                            opinion_parts.append(f"인근 {target_area:.0f}㎡ 평균 시세 {avg_price:,}만원 대비 입력 감정가 {appraisal:,}만원으로 **약 {abs(diff_pct)}% 저평가** 수준 — 감정가 적정 범위 내.")
+                        min_price = min(prices)
+                        max_price = max(prices)
+
+                    # ── 리스크 스코어 산출 ──────────────────────────
+                    score = 0
+                    score_detail = []
+
+                    # ① 가격 갭율 (감정가 입력 시)
+                    gap_pct = None
+                    if appraisal > 0 and avg_price > 0:
+                        gap_pct = round((appraisal - avg_price) / avg_price * 100, 1)
+                        if gap_pct > 10:
+                            score += 3; score_detail.append(f"가격 갭 +{gap_pct}% (감정가가 시세보다 높음) → 3점")
+                        elif gap_pct > 3:
+                            score += 2; score_detail.append(f"가격 갭 +{gap_pct}% → 2점")
+                        elif gap_pct > -3:
+                            score += 1; score_detail.append(f"가격 갭 {gap_pct}% (시세 근접) → 1점")
                         else:
-                            opinion_parts.append(f"인근 {target_area:.0f}㎡ 평균 시세 {avg_price:,}만원 대비 입력 감정가 {appraisal:,}만원으로 **적정 수준**.")
-                    elif appraisal == 0 and nearby:
-                        prices = [x["거래금액(만원)"] for x in nearby]
-                        avg_price = round(sum(prices) / len(prices))
-                        opinion_parts.append(f"인근 {target_area:.0f}㎡ 평균 실거래가는 {avg_price:,}만원입니다. 감정가를 입력하시면 적정성 비교 의견을 제공합니다.")
+                            score += 0; score_detail.append(f"가격 갭 {gap_pct}% (감정가가 시세보다 낮음) → 0점")
 
-                    if 미분양비율 > 0:
-                        opinion_parts.append(f"최초 분양 시 미분양 비율 {미분양비율}%.")
-                    if target_data:
-                        opinion_parts.append(f"{sigungu} 현재 미분양 {target_data['미분양세대수']:,}세대({기준월_str} 기준).")
-                    if news_list or blog_list:
-                        opinion_parts.append("관련 뉴스·블로그 내용을 함께 검토하시기 바랍니다.")
-
-                    if opinion_parts:
-                        st.warning("  \n".join(opinion_parts))
+                    # ② 최초 미분양율
+                    if 미분양비율 >= 30:
+                        score += 3; score_detail.append(f"최초 미분양율 {미분양비율}% (높음) → 3점")
+                    elif 미분양비율 >= 10:
+                        score += 2; score_detail.append(f"최초 미분양율 {미분양비율}% → 2점")
+                    elif 미분양비율 > 0:
+                        score += 1; score_detail.append(f"최초 미분양율 {미분양비율}% → 1점")
                     else:
-                        st.info("수집된 데이터가 부족하여 종합 의견을 제공하기 어렵습니다.")
+                        score_detail.append("최초 미분양 없음 → 0점")
+
+                    # ③ 경과기간 (분양일로부터 현재까지)
+                    from datetime import datetime
+                    elapsed_months = 0
+                    try:
+                        sale_date = datetime.strptime(분양일자, "%Y-%m-%d")
+                        elapsed_months = (datetime.now().year - sale_date.year) * 12 + (datetime.now().month - sale_date.month)
+                        if elapsed_months >= 36:
+                            score += 3; score_detail.append(f"경과기간 {elapsed_months}개월 (3년 이상) → 3점")
+                        elif elapsed_months >= 18:
+                            score += 2; score_detail.append(f"경과기간 {elapsed_months}개월 → 2점")
+                        elif elapsed_months >= 6:
+                            score += 1; score_detail.append(f"경과기간 {elapsed_months}개월 → 1점")
+                        else:
+                            score_detail.append(f"경과기간 {elapsed_months}개월 (단기) → 0점")
+                    except:
+                        score_detail.append("경과기간 산출 불가")
+
+                    # ④ 정성 시그널 (할인 키워드 매칭)
+                    discount_keywords = ["마이너스피", "할인분양", "무순위", "미계약", "잔여세대", "분양가 인하", "특별공급", "할인"]
+                    all_titles = " ".join([x["제목"] for x in news_list + blog_list + cafe_list])
+                    keyword_hits = sum(1 for kw in discount_keywords if kw in all_titles)
+                    if keyword_hits >= 4:
+                        score += 3; score_detail.append(f"할인 키워드 {keyword_hits}개 감지 → 3점")
+                    elif keyword_hits >= 2:
+                        score += 2; score_detail.append(f"할인 키워드 {keyword_hits}개 감지 → 2점")
+                    elif keyword_hits == 1:
+                        score += 1; score_detail.append(f"할인 키워드 {keyword_hits}개 감지 → 1점")
+                    else:
+                        score_detail.append("할인 키워드 없음 → 0점")
+
+                    # ── 등급 매핑 ────────────────────────────────────
+                    if score <= 2:
+                        grade, grade_color, adj_low, adj_high, grade_desc = "A", "#2e7d32", 0, 0, "조정 불필요 — 시세 갭 미미, 미분양 낮음"
+                    elif score <= 5:
+                        grade, grade_color, adj_low, adj_high, grade_desc = "B", "#1565c0", 3, 5, "경미한 할인 정황"
+                    elif score <= 8:
+                        grade, grade_color, adj_low, adj_high, grade_desc = "C", "#e65100", 5, 10, "미분양 지속 + 시세 하회"
+                    elif score <= 11:
+                        grade, grade_color, adj_low, adj_high, grade_desc = "D", "#b71c1c", 10, 15, "다수 할인 시그널 확인됨"
+                    else:
+                        grade, grade_color, adj_low, adj_high, grade_desc = "E", "#4a148c", 15, 20, "할인 강한 정황 — 재감정 권고"
+
+                    # ── 출력 ─────────────────────────────────────────
+                    g1, g2, g3 = st.columns([1, 2, 3])
+                    g1.markdown(f"<div style='text-align:center; background:{grade_color}; color:white; border-radius:12px; padding:18px 0; font-size:2.5rem; font-weight:900'>{grade}</div><div style='text-align:center; font-size:0.8rem; color:#666; margin-top:6px'>리스크 등급 (총점 {score}점)</div>", unsafe_allow_html=True)
+
+                    if avg_price > 0:
+                        g2.metric("인근 평균 실거래가", f"{avg_price:,}만원", f"범위 {min_price:,}~{max_price:,}만원")
+                    if appraisal > 0 and gap_pct is not None:
+                        sign = "+" if gap_pct > 0 else ""
+                        g3.metric("감정가 vs 시세 갭", f"{sign}{gap_pct}%", f"감정가 {appraisal:,}만원 / 시세 {avg_price:,}만원")
+
+                    st.markdown("---")
+
+                    # 의견 문구
+                    if appraisal > 0 and avg_price > 0:
+                        ref_low = round(avg_price * (1 - adj_high / 100))
+                        ref_high = round(avg_price * (1 - adj_low / 100))
+                        if grade == "A":
+                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 {avg_price:,}만원 대비 감정가 {appraisal:,}만원({'+' if gap_pct>=0 else ''}{gap_pct}%)으로 **적정 수준**입니다. 추가 감액 없이 심사 진행 가능합니다."
+                        else:
+                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 {avg_price:,}만원 대비 감정가 {appraisal:,}만원({'+' if gap_pct>=0 else ''}{gap_pct}%)으로 **{grade_desc}** 수준입니다.  \n권장 감정가 참고 레인지: **{ref_low:,}~{ref_high:,}만원** (실거래 평균 대비 {adj_low}~{adj_high}% 하향 적용, 미분양 리스크 반영)"
+                    elif avg_price > 0:
+                        if grade == "A":
+                            ref_low = ref_high = avg_price
+                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}~{max_price:,}만원)  \n미분양/시장 신호 등급: **{grade}** — {grade_desc}  \n※ 감정가를 입력하시면 해당 값 대비 적정성을 판단해 드립니다."
+                        else:
+                            ref_low = round(avg_price * (1 - adj_high / 100))
+                            ref_high = round(avg_price * (1 - adj_low / 100))
+                            opinion_text = f"인근 {target_area:.0f}㎡ 실거래 평균 **{avg_price:,}만원** (범위: {min_price:,}~{max_price:,}만원)  \n미분양/시장 신호 등급: **{grade}** — {grade_desc}  \n권장 감정가 참고 레인지: **{ref_low:,}~{ref_high:,}만원** (실거래 평균 대비 {adj_low}~{adj_high}% 하향 적용, 미분양 리스크 반영)  \n※ 감정가를 입력하시면 해당 값 대비 적정성을 판단해 드립니다."
+                    else:
+                        opinion_text = f"미분양/시장 신호 등급: **{grade}** ({grade_desc})  \n인근 실거래 데이터가 부족하여 시세 비교가 어렵습니다. 감정가와 면적을 입력 후 재검색해 주세요."
+
+                    st.warning(opinion_text)
+
+                    with st.expander("점수 산출 근거 보기"):
+                        for d in score_detail:
+                            st.markdown(f"- {d}")
 
                     # 이력 저장
                     record = {
