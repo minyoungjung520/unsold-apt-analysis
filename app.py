@@ -749,7 +749,7 @@ if search_btn:
                         g2.metric("인근 평균 실거래가", f"{avg_price:,}만원", f"범위 {min_price:,}~{max_price:,}만원")
                     if appraisal > 0 and gap_pct is not None:
                         sign = "+" if gap_pct > 0 else ""
-                        g3.metric("감정가 vs 시세 갭", f"{sign}{gap_pct}%", f"감정가 {appraisal:,}만원 / 시세 {avg_price:,}만원")
+                        g3.metric("감정가 vs 시세 갭", f"{sign}{gap_pct}%", f"감정가 {appraisal:,}만원 / 시세 {avg_price:,}만원", delta_color="off")
 
                     st.markdown("---")
 
