@@ -441,6 +441,8 @@ if "prefill_location" not in st.session_state:
     st.session_state.prefill_location = ""
 if "prefill_apt_name" not in st.session_state:
     st.session_state.prefill_apt_name = ""
+if "kakao_candidates" not in st.session_state:
+    st.session_state.kakao_candidates = []
 
 with st.expander("주소 또는 단지명으로 아파트명 검색"):
     addr_col1, addr_col2 = st.columns([4, 1])
@@ -450,19 +452,21 @@ with st.expander("주소 또는 단지명으로 아파트명 검색"):
         addr_btn = st.button("검색", key="addr_search", use_container_width=True)
     if addr_btn and address_input:
         with st.spinner("카카오 검색 중..."):
-            candidates = fetch_kakao_apt_name(address_input)
-        if candidates:
-            st.success(f"검색 결과 {len(candidates)}건 — '선택' 클릭 후 아래 검색 버튼을 누르세요.")
-            for c in candidates:
-                col_a, col_b = st.columns([3, 1])
-                col_a.markdown(f"**{c['아파트명']}** ({c['주소']})")
-                if col_b.button("선택", key=f"sel_{c['아파트명']}"):
-                    parts = c['주소'].replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace("특별자치시", "").split()
-                    loc = " ".join(parts[:3]) if len(parts) >= 3 else c['주소']
-                    st.session_state.prefill_location = loc
-                    st.session_state.prefill_apt_name = c['아파트명']
-        else:
-            st.warning("검색 결과가 없습니다. 다른 주소나 단지명으로 시도해 보세요.")
+            st.session_state.kakao_candidates = fetch_kakao_apt_name(address_input)
+    if st.session_state.kakao_candidates:
+        st.success(f"검색 결과 {len(st.session_state.kakao_candidates)}건 — '선택' 클릭 후 '이 단지 분석' 버튼을 누르세요.")
+        for c in st.session_state.kakao_candidates:
+            col_a, col_b = st.columns([3, 1])
+            col_a.markdown(f"**{c['아파트명']}** ({c['주소']})")
+            if col_b.button("선택", key=f"sel_{c['아파트명']}"):
+                parts = c['주소'].replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace("특별자치시", "").split()
+                loc = " ".join(parts[:3]) if len(parts) >= 3 else c['주소']
+                st.session_state.prefill_location = loc
+                st.session_state.prefill_apt_name = c['아파트명']
+                st.session_state.kakao_candidates = []
+                st.rerun()
+    elif addr_btn and address_input:
+        st.warning("검색 결과가 없습니다. 다른 주소나 단지명으로 시도해 보세요.")
 
 kakao_search_btn = False
 if st.session_state.prefill_apt_name:
