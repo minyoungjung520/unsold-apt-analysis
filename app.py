@@ -479,7 +479,7 @@ button[kind="primary"]:hover {
 hr { border-color: #eef0f8 !important; }
 </style>
 """, unsafe_allow_html=True)
-st.title("미분양 아파트 감정가 적정성 분석")
+st.title("🏙️ 미분양 아파트 감정가 적정성 분석")
 st.markdown("<p style='color:#666; font-size:0.95rem; margin-top:-12px'>소재지와 아파트명을 입력하면 미분양·시세·할인 근거를 자동 수집합니다.</p>", unsafe_allow_html=True)
 
 # 입력 섹션
