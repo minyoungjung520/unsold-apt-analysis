@@ -455,12 +455,12 @@ button[kind="primary"]:hover {
 
 /* expander 헤더 강조 */
 [data-testid="stExpander"] summary p {
-    color: #1428A0 !important;
+    color: #333333 !important;
     font-weight: 700 !important;
     font-size: 0.95rem !important;
 }
 [data-testid="stExpander"] summary:hover p {
-    color: #0e1e7a !important;
+    color: #1428A0 !important;
 }
 
 /* 성공/경고 메시지 */
@@ -532,7 +532,7 @@ with col5:
 with st.expander("주소 또는 단지명으로 아파트명 검색 (단지가 조회가 안되는 경우)"):
     addr_col1, addr_col2 = st.columns([4, 1])
     with addr_col1:
-        address_input = st.text_input("주소 또는 단지명 입력", placeholder="예: 전북 군산시 지곡동 620  또는  대구 수성구 범어자이", label_visibility="collapsed")
+        address_input = st.text_input("주소 또는 단지명 입력", placeholder="주소 입력 — 예: 전북 군산시 지곡동 620", label_visibility="collapsed")
     with addr_col2:
         addr_btn = st.button("검색", key="addr_search", use_container_width=True)
     if addr_btn and address_input:
