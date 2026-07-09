@@ -492,7 +492,34 @@ def _select_cq(raw, loc):
     st.session_state.last_loc = loc
     st.session_state.last_apt = raw.get("HOUSE_NM", "")
 
-with st.expander("주소 또는 단지명으로 아파트명 검색"):
+# ── 기본 입력 (강조 영역) ──
+st.markdown(
+    "<div style='background:linear-gradient(135deg,#f0f4ff 0%,#e8eeff 100%);border:2px solid #1428A0;"
+    "border-radius:12px;padding:6px 16px 2px 16px;margin-bottom:4px'>"
+    "<b style='color:#1428A0;font-size:1.02rem'>소재지·아파트명 입력</b></div>",
+    unsafe_allow_html=True
+)
+
+col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
+with col1:
+    location = st.text_input("소재지", value=st.session_state.last_loc, placeholder="예: 대구 수성구 범어동")
+with col2:
+    apt_name = st.text_input("아파트명", value=st.session_state.last_apt, placeholder="예: 범어자이")
+with col3:
+    area_options = ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "직접입력"]
+    area_select = st.selectbox("전용면적", area_options, index=2)
+    if area_select == "직접입력":
+        target_area = st.number_input("면적 입력(㎡)", min_value=10.0, max_value=300.0, value=84.0, step=1.0)
+    else:
+        target_area = float(area_select.replace("㎡", ""))
+with col4:
+    appraisal = st.number_input("감정가 (만원)", min_value=0, step=100, value=0)
+with col5:
+    st.markdown("<div style='margin-top:28px'>", unsafe_allow_html=True)
+    search_btn = st.button("검색", type="primary", use_container_width=True)
+
+# ── 주소/단지명 검색 (단지가 조회가 안되는 경우) ──
+with st.expander("주소 또는 단지명으로 아파트명 검색 (단지가 조회가 안되는 경우)"):
     addr_col1, addr_col2 = st.columns([4, 1])
     with addr_col1:
         address_input = st.text_input("주소 또는 단지명 입력", placeholder="예: 전북 군산시 지곡동 620  또는  대구 수성구 범어자이", label_visibility="collapsed")
@@ -526,24 +553,6 @@ if _banner_name:
         f"<b style='color:#1428A0'>선택된 단지:</b> {_banner_name} ({st.session_state.cq_selected_loc})</div>",
         unsafe_allow_html=True
     )
-
-col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
-with col1:
-    location = st.text_input("소재지", value=st.session_state.last_loc, placeholder="예: 대구 수성구 범어동")
-with col2:
-    apt_name = st.text_input("아파트명", value=st.session_state.last_apt, placeholder="예: 범어자이")
-with col3:
-    area_options = ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "직접입력"]
-    area_select = st.selectbox("전용면적", area_options, index=2)
-    if area_select == "직접입력":
-        target_area = st.number_input("면적 입력(㎡)", min_value=10.0, max_value=300.0, value=84.0, step=1.0)
-    else:
-        target_area = float(area_select.replace("㎡", ""))
-with col4:
-    appraisal = st.number_input("감정가 (만원)", min_value=0, step=100, value=0)
-with col5:
-    st.markdown("<div style='margin-top:28px'>", unsafe_allow_html=True)
-    search_btn = st.button("검색", type="primary", use_container_width=True)
 
 # 선택 데이터가 있으면 자동 분석
 cq_run = bool(st.session_state.cq_selected_info or st.session_state.cq_apt_name)
