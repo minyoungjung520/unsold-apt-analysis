@@ -464,13 +464,15 @@ with st.expander("주소 또는 단지명으로 아파트명 검색"):
         else:
             st.warning("검색 결과가 없습니다. 다른 주소나 단지명으로 시도해 보세요.")
 
+kakao_search_btn = False
 if st.session_state.prefill_apt_name:
-    st.markdown(
-        f"<div style='background:#e8f0fe; border-left:4px solid #1428A0; padding:10px 14px; border-radius:6px; margin-bottom:8px'>"
-        f"<b style='color:#1428A0'>선택된 단지:</b> {st.session_state.prefill_apt_name} / {st.session_state.prefill_location} "
-        f"&nbsp;&nbsp;<span style='color:#888; font-size:0.85rem'>※ 아래 검색 버튼을 클릭하세요</span></div>",
+    b1, b2 = st.columns([4, 1])
+    b1.markdown(
+        f"<div style='background:#e8f0fe; border-left:4px solid #1428A0; padding:10px 14px; border-radius:6px'>"
+        f"<b style='color:#1428A0'>선택된 단지:</b> {st.session_state.prefill_apt_name} ({st.session_state.prefill_location})</div>",
         unsafe_allow_html=True
     )
+    kakao_search_btn = b2.button("이 단지 분석", type="primary", use_container_width=True)
 
 col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
 with col1:
@@ -496,10 +498,15 @@ if not location and st.session_state.prefill_location:
 if not apt_name and st.session_state.prefill_apt_name:
     apt_name = st.session_state.prefill_apt_name
 
-if search_btn:
-    if not location or not apt_name:
+effective_location = location or st.session_state.prefill_location
+effective_apt_name = apt_name or st.session_state.prefill_apt_name
+
+if search_btn or kakao_search_btn:
+    if not effective_location or not effective_apt_name:
         st.warning("소재지와 아파트명을 입력해주세요.")
     else:
+        location = effective_location
+        apt_name = effective_apt_name
         import re as _re
         location_parts = location.split()
         raw_sido = location_parts[0] if location_parts else ""
