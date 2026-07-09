@@ -462,7 +462,8 @@ st.markdown("<p style='color:#666; font-size:0.95rem; margin-top:-12px'>소재�
 st.header("단지 정보 입력")
 
 # 세션스테이트 초기화
-for _k, _v in [("kakao_candidates",[]), ("cq_selected_info", None), ("cq_selected_loc", ""), ("cq_apt_name", "")]:
+for _k, _v in [("kakao_candidates",[]), ("cq_selected_info", None), ("cq_selected_loc", ""), ("cq_apt_name", ""),
+               ("last_loc", ""), ("last_apt", "")]:
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
@@ -489,6 +490,8 @@ with st.expander("주소 또는 단지명으로 아파트명 검색"):
                 st.session_state.cq_apt_name = c['아파트명']
                 st.session_state.cq_selected_loc = _extract_loc(c['주소'])
                 st.session_state.cq_selected_info = None
+                st.session_state.last_loc = st.session_state.cq_selected_loc
+                st.session_state.last_apt = c['아파트명']
                 st.session_state.kakao_candidates = []
                 st.rerun()
     elif addr_btn and address_input:
@@ -505,9 +508,9 @@ if _banner_name:
 
 col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
 with col1:
-    location = st.text_input("소재지", placeholder="예: 대구 수성구 범어동")
+    location = st.text_input("소재지", value=st.session_state.last_loc, placeholder="예: 대구 수성구 범어동")
 with col2:
-    apt_name = st.text_input("아파트명", placeholder="예: 범어자이")
+    apt_name = st.text_input("아파트명", value=st.session_state.last_apt, placeholder="예: 범어자이")
 with col3:
     area_options = ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "직접입력"]
     area_select = st.selectbox("전용면적", area_options, index=2)
@@ -571,6 +574,8 @@ if search_btn or cq_run:
                                 # 텍스트 입력 건드리지 않고 세션스테이트에만 저장
                                 st.session_state.cq_selected_info = cq['_raw']
                                 st.session_state.cq_selected_loc = _extract_loc(cq['주소'])
+                                st.session_state.last_loc = st.session_state.cq_selected_loc
+                                st.session_state.last_apt = cq['단지명']
                                 st.rerun()
                     else:
                         st.warning("해당 소재지로도 청약홈 단지를 찾지 못했습니다.")
