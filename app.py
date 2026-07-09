@@ -468,6 +468,8 @@ if "prefill_apt_name" not in st.session_state:
     st.session_state.prefill_apt_name = ""
 if "kakao_candidates" not in st.session_state:
     st.session_state.kakao_candidates = []
+if "cheongyak_selected" not in st.session_state:
+    st.session_state.cheongyak_selected = False
 
 with st.expander("주소 또는 단지명으로 아파트명 검색"):
     addr_col1, addr_col2 = st.columns([4, 1])
@@ -530,7 +532,12 @@ if not apt_name and st.session_state.prefill_apt_name:
 effective_location = location or st.session_state.prefill_location
 effective_apt_name = apt_name or st.session_state.prefill_apt_name
 
-if search_btn or kakao_search_btn:
+cheongyak_search_btn = False
+if st.session_state.cheongyak_selected:
+    st.session_state.cheongyak_selected = False
+    cheongyak_search_btn = True
+
+if search_btn or kakao_search_btn or cheongyak_search_btn:
     if not effective_location or not effective_apt_name:
         st.warning("소재지와 아파트명을 입력해주세요.")
     else:
@@ -550,13 +557,18 @@ if search_btn or kakao_search_btn:
                     st.error(f"청약홈에서 '{apt_name}'을 찾을 수 없습니다. 분양 당시 등록명이 다를 수 있습니다.")
                     # 주소로 청약홈 재검색
                     with st.spinner("소재지 주소로 청약홈 재검색 중..."):
-                        candidates = fetch_apt_candidates_by_addr(location)
-                    if candidates:
-                        st.info("같은 지역 청약홈 등록 단지 목록입니다. 해당 단지를 아파트명 입력란에 입력 후 재검색하세요.")
-                        import pandas as pd
-                        df_cand = pd.DataFrame(candidates)
-                        df_cand.columns = ["단지명(청약홈 등록명)", "주소", "분양일"]
-                        st.dataframe(df_cand, use_container_width=True, hide_index=True)
+                        cq_candidates = fetch_apt_candidates_by_addr(location)
+                    if cq_candidates:
+                        st.info("같은 지역 청약홈 등록 단지입니다. 해당 단지를 선택하면 바로 분석합니다.")
+                        for cq in cq_candidates:
+                            c1, c2, c3, c4 = st.columns([3, 3, 2, 1])
+                            c1.markdown(f"**{cq['단지명']}**")
+                            c2.markdown(cq['주소'])
+                            c3.markdown(cq['분양일'])
+                            if c4.button("선택", key=f"cq_{cq['단지명']}"):
+                                st.session_state.prefill_apt_name = cq['단지명']
+                                st.session_state.cheongyak_selected = True
+                                st.rerun()
                     else:
                         st.warning("해당 소재지로도 청약홈 단지를 찾지 못했습니다.")
                 else:
