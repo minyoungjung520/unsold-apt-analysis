@@ -453,6 +453,16 @@ button[kind="primary"]:hover {
     box-shadow: 0 0 0 2px rgba(20,40,160,0.15) !important;
 }
 
+/* expander 헤더 강조 */
+[data-testid="stExpander"] summary p {
+    color: #1428A0 !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}
+[data-testid="stExpander"] summary:hover p {
+    color: #0e1e7a !important;
+}
+
 /* 성공/경고 메시지 */
 [data-testid="stAlert"] {
     border-radius: 10px !important;
