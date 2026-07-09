@@ -441,8 +441,6 @@ if "prefill_location" not in st.session_state:
     st.session_state.prefill_location = ""
 if "prefill_apt_name" not in st.session_state:
     st.session_state.prefill_apt_name = ""
-if "do_search" not in st.session_state:
-    st.session_state.do_search = False
 
 with st.expander("주소 또는 단지명으로 아파트명 검색"):
     addr_col1, addr_col2 = st.columns([4, 1])
@@ -454,22 +452,25 @@ with st.expander("주소 또는 단지명으로 아파트명 검색"):
         with st.spinner("카카오 검색 중..."):
             candidates = fetch_kakao_apt_name(address_input)
         if candidates:
-            st.success(f"검색 결과 {len(candidates)}건 — 아래 버튼 클릭 시 소재지·아파트명이 자동 입력됩니다.")
+            st.success(f"검색 결과 {len(candidates)}건 — '선택' 클릭 후 아래 검색 버튼을 누르세요.")
             for c in candidates:
                 col_a, col_b = st.columns([3, 1])
                 col_a.markdown(f"**{c['아파트명']}** ({c['주소']})")
-                if col_b.button("선택 후 검색", key=f"sel_{c['아파트명']}"):
+                if col_b.button("선택", key=f"sel_{c['아파트명']}"):
                     parts = c['주소'].replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace("특별자치시", "").split()
                     loc = " ".join(parts[:3]) if len(parts) >= 3 else c['주소']
                     st.session_state.prefill_location = loc
                     st.session_state.prefill_apt_name = c['아파트명']
-                    st.session_state.do_search = True
-                    st.rerun()
         else:
             st.warning("검색 결과가 없습니다. 다른 주소나 단지명으로 시도해 보세요.")
 
 if st.session_state.prefill_apt_name:
-    st.info(f"카카오 선택: **{st.session_state.prefill_apt_name}** / {st.session_state.prefill_location}  ※ 청약홈 등록명과 다를 수 있습니다.")
+    st.markdown(
+        f"<div style='background:#e8f0fe; border-left:4px solid #1428A0; padding:10px 14px; border-radius:6px; margin-bottom:8px'>"
+        f"<b style='color:#1428A0'>선택된 단지:</b> {st.session_state.prefill_apt_name} / {st.session_state.prefill_location} "
+        f"&nbsp;&nbsp;<span style='color:#888; font-size:0.85rem'>※ 아래 검색 버튼을 클릭하세요</span></div>",
+        unsafe_allow_html=True
+    )
 
 col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
 with col1:
@@ -495,8 +496,7 @@ if not location and st.session_state.prefill_location:
 if not apt_name and st.session_state.prefill_apt_name:
     apt_name = st.session_state.prefill_apt_name
 
-if search_btn or st.session_state.do_search:
-    st.session_state.do_search = False
+if search_btn:
     if not location or not apt_name:
         st.warning("소재지와 아파트명을 입력해주세요.")
     else:
