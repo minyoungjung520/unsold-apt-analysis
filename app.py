@@ -441,6 +441,8 @@ if "prefill_location" not in st.session_state:
     st.session_state.prefill_location = ""
 if "prefill_apt_name" not in st.session_state:
     st.session_state.prefill_apt_name = ""
+if "do_search" not in st.session_state:
+    st.session_state.do_search = False
 
 with st.expander("주소 또는 단지명으로 아파트명 검색"):
     addr_col1, addr_col2 = st.columns([4, 1])
@@ -456,23 +458,30 @@ with st.expander("주소 또는 단지명으로 아파트명 검색"):
             for c in candidates:
                 col_a, col_b = st.columns([3, 1])
                 col_a.markdown(f"**{c['아파트명']}** ({c['주소']})")
-                if col_b.button("선택", key=f"sel_{c['아파트명']}"):
+                if col_b.button("선택 후 검색", key=f"sel_{c['아파트명']}"):
                     parts = c['주소'].replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace("특별자치시", "").split()
                     loc = " ".join(parts[:3]) if len(parts) >= 3 else c['주소']
                     st.session_state.prefill_location = loc
                     st.session_state.prefill_apt_name = c['아파트명']
+                    st.session_state.do_search = True
                     st.rerun()
         else:
             st.warning("검색 결과가 없습니다. 다른 주소나 단지명으로 시도해 보세요.")
 
-if st.session_state.prefill_apt_name:
-    st.info(f"선택됨: **{st.session_state.prefill_apt_name}** / {st.session_state.prefill_location}  ※ 청약홈 등록명과 다를 수 있으니 검색 후 확인하세요.")
-
 col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
 with col1:
-    location = st.text_input("소재지", value=st.session_state.prefill_location, placeholder="예: 대구 수성구 범어동")
+    location = st.text_input("소재지", placeholder="예: 대구 수성구 범어동")
 with col2:
-    apt_name = st.text_input("아파트명", value=st.session_state.prefill_apt_name, placeholder="예: 범어자이")
+    apt_name = st.text_input("아파트명", placeholder="예: 범어자이")
+
+# 카카오 선택 값으로 덮어쓰기 (직접 입력이 없을 때)
+if not location and st.session_state.prefill_location:
+    location = st.session_state.prefill_location
+if not apt_name and st.session_state.prefill_apt_name:
+    apt_name = st.session_state.prefill_apt_name
+
+if st.session_state.prefill_apt_name:
+    st.info(f"카카오 선택: **{st.session_state.prefill_apt_name}** / {st.session_state.prefill_location}  ※ 청약홈 등록명과 다를 수 있습니다.")
 with col3:
     area_options = ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "직접입력"]
     area_select = st.selectbox("전용면적", area_options, index=2)
@@ -486,7 +495,8 @@ with col5:
     st.markdown("<div style='margin-top:28px'>", unsafe_allow_html=True)
     search_btn = st.button("검색", type="primary", use_container_width=True)
 
-if search_btn:
+if search_btn or st.session_state.do_search:
+    st.session_state.do_search = False
     if not location or not apt_name:
         st.warning("소재지와 아파트명을 입력해주세요.")
     else:
