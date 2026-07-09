@@ -267,11 +267,29 @@ def fetch_apt_info(apt_name):
     data = res.json()
     if data.get("currentCount", 0) == 0:
         return None
-    # 정확히 일치하는 단지 우선, 없으면 첫 번째
     for item in data["data"]:
         if item.get("HOUSE_NM", "") == apt_name:
             return item
     return data["data"][0]
+
+def fetch_apt_candidates_by_addr(address):
+    """주소로 청약홈 단지 후보 검색"""
+    url = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail"
+    headers = {"Authorization": f"Infuser {API_KEY}"}
+    # 주소에서 핵심 키워드 추출 (시군구 + 동)
+    keyword = " ".join(address.split()[:3])
+    params = {
+        "page": 1,
+        "perPage": 10,
+        "cond[HSSPLY_ADRES::LIKE]": keyword,
+        "returnType": "json"
+    }
+    res = requests.get(url, headers=headers, params=params, timeout=10)
+    res.raise_for_status()
+    data = res.json()
+    if data.get("currentCount", 0) == 0:
+        return []
+    return [{"단지명": d.get("HOUSE_NM",""), "주소": d.get("HSSPLY_ADRES",""), "분양일": d.get("RCRIT_PBLANC_DE","")} for d in data["data"]]
 
 def fetch_apt_cmpet(house_manage_no, pblanc_no):
     url = "https://api.odcloud.kr/api/ApplyhomeInfoCmpetRtSvc/v1/getAPTLttotPblancCmpet"
@@ -484,7 +502,18 @@ if search_btn:
                 apt_info = fetch_apt_info(apt_name)
 
                 if not apt_info:
-                    st.error("해당 아파트 정보를 찾을 수 없습니다. 아파트명을 확인해주세요.")
+                    st.error(f"청약홈에서 '{apt_name}'을 찾을 수 없습니다. 분양 당시 등록명이 다를 수 있습니다.")
+                    # 주소로 청약홈 재검색
+                    with st.spinner("소재지 주소로 청약홈 재검색 중..."):
+                        candidates = fetch_apt_candidates_by_addr(location)
+                    if candidates:
+                        st.info("같은 지역 청약홈 등록 단지 목록입니다. 해당 단지를 아파트명 입력란에 입력 후 재검색하세요.")
+                        import pandas as pd
+                        df_cand = pd.DataFrame(candidates)
+                        df_cand.columns = ["단지명(청약홈 등록명)", "주소", "분양일"]
+                        st.dataframe(df_cand, use_container_width=True, hide_index=True)
+                    else:
+                        st.warning("해당 소재지로도 청약홈 단지를 찾지 못했습니다.")
                 else:
                     house_manage_no = apt_info.get("HOUSE_MANAGE_NO", "")
                     pblanc_no = apt_info.get("PBLANC_NO", "")
