@@ -507,9 +507,9 @@ if st.session_state.prefill_apt_name:
 
 col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
 with col1:
-    location = st.text_input("소재지", placeholder="예: 대구 수성구 범어동")
+    location = st.text_input("소재지", value=st.session_state.prefill_location, placeholder="예: 대구 수성구 범어동")
 with col2:
-    apt_name = st.text_input("아파트명", placeholder="예: 범어자이")
+    apt_name = st.text_input("아파트명", value=st.session_state.prefill_apt_name, placeholder="예: 범어자이")
 with col3:
     area_options = ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "직접입력"]
     area_select = st.selectbox("전용면적", area_options, index=2)
@@ -523,26 +523,15 @@ with col5:
     st.markdown("<div style='margin-top:28px'>", unsafe_allow_html=True)
     search_btn = st.button("검색", type="primary", use_container_width=True)
 
-# 카카오 선택값 우선 적용 (직접 입력 없을 때)
-if not location and st.session_state.prefill_location:
-    location = st.session_state.prefill_location
-if not apt_name and st.session_state.prefill_apt_name:
-    apt_name = st.session_state.prefill_apt_name
-
-effective_location = location or st.session_state.prefill_location
-effective_apt_name = apt_name or st.session_state.prefill_apt_name
-
 cheongyak_search_btn = False
 if st.session_state.cheongyak_selected:
     st.session_state.cheongyak_selected = False
     cheongyak_search_btn = True
 
 if search_btn or kakao_search_btn or cheongyak_search_btn:
-    if not effective_location or not effective_apt_name:
+    if not location or not apt_name:
         st.warning("소재지와 아파트명을 입력해주세요.")
     else:
-        location = effective_location
-        apt_name = effective_apt_name
         import re as _re
         location_parts = location.split()
         raw_sido = location_parts[0] if location_parts else ""
@@ -567,6 +556,9 @@ if search_btn or kakao_search_btn or cheongyak_search_btn:
                             c3.markdown(cq['분양일'])
                             if c4.button("선택", key=f"cq_{cq['단지명']}"):
                                 st.session_state.prefill_apt_name = cq['단지명']
+                                # 청약홈 주소에서 소재지 추출 (예: "전라북도 군산시 지곡동 126번지 일원" → "전북 군산시 지곡동")
+                                cq_parts = cq['주소'].replace("특별자치도","").replace("특별시","").replace("광역시","").replace("특별자치시","").replace("전라북도","전북").replace("전라남도","전남").replace("경상북도","경북").replace("경상남도","경남").replace("충청북도","충북").replace("충청남도","충남").replace("강원특별자치도","강원").split()
+                                st.session_state.prefill_location = " ".join(cq_parts[:3]) if len(cq_parts) >= 3 else cq['주소']
                                 st.session_state.cheongyak_selected = True
                                 st.rerun()
                     else:
