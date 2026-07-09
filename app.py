@@ -461,15 +461,19 @@ st.markdown("<p style='color:#666; font-size:0.95rem; margin-top:-12px'>소재�
 # 입력 섹션
 st.header("단지 정보 입력")
 
-# 주소로 아파트명 자동 검색
-if "prefill_location" not in st.session_state:
-    st.session_state.prefill_location = ""
-if "prefill_apt_name" not in st.session_state:
-    st.session_state.prefill_apt_name = ""
+# 위젯 키 초기화 (key= 방식으로 세션스테이트와 직접 연결)
+if "loc_input" not in st.session_state:
+    st.session_state.loc_input = ""
+if "apt_input" not in st.session_state:
+    st.session_state.apt_input = ""
 if "kakao_candidates" not in st.session_state:
     st.session_state.kakao_candidates = []
-if "cheongyak_selected" not in st.session_state:
-    st.session_state.cheongyak_selected = False
+if "do_search" not in st.session_state:
+    st.session_state.do_search = False
+
+def _extract_loc(addr):
+    parts = addr.replace("특별자치도","").replace("특별시","").replace("광역시","").replace("특별자치시","").replace("전라북도","전북").replace("전라남도","전남").replace("경상북도","경북").replace("경상남도","경남").replace("충청북도","충북").replace("충청남도","충남").replace("강원특별자치도","강원").split()
+    return " ".join(parts[:3]) if len(parts) >= 3 else addr
 
 with st.expander("주소 또는 단지명으로 아파트명 검색"):
     addr_col1, addr_col2 = st.columns([4, 1])
@@ -481,35 +485,24 @@ with st.expander("주소 또는 단지명으로 아파트명 검색"):
         with st.spinner("카카오 검색 중..."):
             st.session_state.kakao_candidates = fetch_kakao_apt_name(address_input)
     if st.session_state.kakao_candidates:
-        st.success(f"검색 결과 {len(st.session_state.kakao_candidates)}건 — '선택' 클릭 후 '이 단지 분석' 버튼을 누르세요.")
+        st.success(f"검색 결과 {len(st.session_state.kakao_candidates)}건 — 단지를 선택하면 바로 분석합니다.")
         for c in st.session_state.kakao_candidates:
             col_a, col_b = st.columns([3, 1])
             col_a.markdown(f"**{c['아파트명']}** ({c['주소']})")
             if col_b.button("선택", key=f"sel_{c['아파트명']}"):
-                parts = c['주소'].replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace("특별자치시", "").split()
-                loc = " ".join(parts[:3]) if len(parts) >= 3 else c['주소']
-                st.session_state.prefill_location = loc
-                st.session_state.prefill_apt_name = c['아파트명']
+                st.session_state.loc_input = _extract_loc(c['주소'])
+                st.session_state.apt_input = c['아파트명']
                 st.session_state.kakao_candidates = []
+                st.session_state.do_search = True
                 st.rerun()
     elif addr_btn and address_input:
         st.warning("검색 결과가 없습니다. 다른 주소나 단지명으로 시도해 보세요.")
 
-kakao_search_btn = False
-if st.session_state.prefill_apt_name:
-    b1, b2 = st.columns([4, 1])
-    b1.markdown(
-        f"<div style='background:#e8f0fe; border-left:4px solid #1428A0; padding:10px 14px; border-radius:6px'>"
-        f"<b style='color:#1428A0'>선택된 단지:</b> {st.session_state.prefill_apt_name} ({st.session_state.prefill_location})</div>",
-        unsafe_allow_html=True
-    )
-    kakao_search_btn = b2.button("이 단지 분석", type="primary", use_container_width=True)
-
 col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
 with col1:
-    location = st.text_input("소재지", value=st.session_state.prefill_location, placeholder="예: 대구 수성구 범어동")
+    location = st.text_input("소재지", key="loc_input", placeholder="예: 대구 수성구 범어동")
 with col2:
-    apt_name = st.text_input("아파트명", value=st.session_state.prefill_apt_name, placeholder="예: 범어자이")
+    apt_name = st.text_input("아파트명", key="apt_input", placeholder="예: 범어자이")
 with col3:
     area_options = ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "직접입력"]
     area_select = st.selectbox("전용면적", area_options, index=2)
@@ -523,12 +516,11 @@ with col5:
     st.markdown("<div style='margin-top:28px'>", unsafe_allow_html=True)
     search_btn = st.button("검색", type="primary", use_container_width=True)
 
-cheongyak_search_btn = False
-if st.session_state.cheongyak_selected:
-    st.session_state.cheongyak_selected = False
-    cheongyak_search_btn = True
+auto_search = st.session_state.do_search
+if auto_search:
+    st.session_state.do_search = False
 
-if search_btn or kakao_search_btn or cheongyak_search_btn:
+if search_btn or auto_search:
     if not location or not apt_name:
         st.warning("소재지와 아파트명을 입력해주세요.")
     else:
@@ -555,11 +547,9 @@ if search_btn or kakao_search_btn or cheongyak_search_btn:
                             c2.markdown(cq['주소'])
                             c3.markdown(cq['분양일'])
                             if c4.button("선택", key=f"cq_{cq['단지명']}"):
-                                st.session_state.prefill_apt_name = cq['단지명']
-                                # 청약홈 주소에서 소재지 추출 (예: "전라북도 군산시 지곡동 126번지 일원" → "전북 군산시 지곡동")
-                                cq_parts = cq['주소'].replace("특별자치도","").replace("특별시","").replace("광역시","").replace("특별자치시","").replace("전라북도","전북").replace("전라남도","전남").replace("경상북도","경북").replace("경상남도","경남").replace("충청북도","충북").replace("충청남도","충남").replace("강원특별자치도","강원").split()
-                                st.session_state.prefill_location = " ".join(cq_parts[:3]) if len(cq_parts) >= 3 else cq['주소']
-                                st.session_state.cheongyak_selected = True
+                                st.session_state.apt_input = cq['단지명']
+                                st.session_state.loc_input = _extract_loc(cq['주소'])
+                                st.session_state.do_search = True
                                 st.rerun()
                     else:
                         st.warning("해당 소재지로도 청약홈 단지를 찾지 못했습니다.")
