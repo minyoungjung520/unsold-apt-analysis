@@ -256,19 +256,33 @@ def fetch_nearby_prices(lawd_cd, dong, months=3, area_low=79, area_high=90):
 def fetch_apt_info(apt_name):
     url = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail"
     headers = {"Authorization": f"Infuser {API_KEY}"}
-    params = {
-        "page": 1,
-        "perPage": 5,
-        "cond[HOUSE_NM::LIKE]": apt_name,
-        "returnType": "json"
-    }
-    res = requests.get(url, headers=headers, params=params, timeout=10)
-    res.raise_for_status()
-    data = res.json()
+    # 공백 제거 버전으로 유사 매칭
+    apt_name_nospace = apt_name.replace(" ", "")
+
+    def _search(query):
+        params = {
+            "page": 1,
+            "perPage": 10,
+            "cond[HOUSE_NM::LIKE]": query,
+            "returnType": "json"
+        }
+        res = requests.get(url, headers=headers, params=params, timeout=10)
+        res.raise_for_status()
+        return res.json()
+
+    # 시도1: 입력명 그대로
+    data = _search(apt_name)
+    # 시도2: 결과 없으면 공백 제거한 핵심 키워드로 재검색
+    if data.get("currentCount", 0) == 0 and len(apt_name_nospace) >= 4:
+        # 앞 4글자 이상으로 검색 (예: "한라비발디" 등)
+        data = _search(apt_name_nospace[:6])
     if data.get("currentCount", 0) == 0:
         return None
+
+    # 공백 무시 비교로 가장 근접한 항목 반환
     for item in data["data"]:
-        if item.get("HOUSE_NM", "") == apt_name:
+        nm = item.get("HOUSE_NM", "").replace(" ", "")
+        if nm == apt_name_nospace or apt_name_nospace in nm or nm in apt_name_nospace:
             return item
     return data["data"][0]
 
