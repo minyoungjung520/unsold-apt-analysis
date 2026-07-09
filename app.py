@@ -273,23 +273,34 @@ def fetch_apt_info(apt_name):
     return data["data"][0]
 
 def fetch_apt_candidates_by_addr(address):
-    """주소로 청약홈 단지 후보 검색"""
+    """주소로 청약홈 단지 후보 검색 (시군구+동 기준, 광역시도 제외)"""
     url = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail"
     headers = {"Authorization": f"Infuser {API_KEY}"}
-    # 주소에서 핵심 키워드 추출 (시군구 + 동)
-    keyword = " ".join(address.split()[:3])
-    params = {
-        "page": 1,
-        "perPage": 10,
-        "cond[HSSPLY_ADRES::LIKE]": keyword,
-        "returnType": "json"
-    }
-    res = requests.get(url, headers=headers, params=params, timeout=10)
-    res.raise_for_status()
-    data = res.json()
-    if data.get("currentCount", 0) == 0:
-        return []
-    return [{"단지명": d.get("HOUSE_NM",""), "주소": d.get("HSSPLY_ADRES",""), "분양일": d.get("RCRIT_PBLANC_DE","")} for d in data["data"]]
+
+    # 광역시도명 제거 후 시군구+동 추출
+    parts = address.replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace("특별자치시", "").split()
+    # parts 예: ["전북", "군산시", "지곡동"] → 시군구부터 사용
+    시군구_parts = [p for p in parts if p.endswith(("시","군","구","도")) or p.endswith(("동","읍","면","리"))]
+    # 시 or 군 + 동/읍/면 조합으로 검색 (도 이름 제외)
+    city = next((p for p in parts if p.endswith(("시","군")) and len(p) >= 3), "")
+    dong = next((p for p in parts if p.endswith(("동","읍","면","리"))), "")
+    keyword = f"{city} {dong}".strip() if city else dong or " ".join(parts[1:3])
+
+    for kw in [keyword, city, dong]:
+        if not kw:
+            continue
+        params = {
+            "page": 1,
+            "perPage": 10,
+            "cond[HSSPLY_ADRES::LIKE]": kw,
+            "returnType": "json"
+        }
+        res = requests.get(url, headers=headers, params=params, timeout=10)
+        res.raise_for_status()
+        data = res.json()
+        if data.get("currentCount", 0) > 0:
+            return [{"단지명": d.get("HOUSE_NM",""), "주소": d.get("HSSPLY_ADRES",""), "분양일": d.get("RCRIT_PBLANC_DE","")} for d in data["data"]]
+    return []
 
 def fetch_apt_cmpet(house_manage_no, pblanc_no):
     url = "https://api.odcloud.kr/api/ApplyhomeInfoCmpetRtSvc/v1/getAPTLttotPblancCmpet"
