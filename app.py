@@ -313,7 +313,7 @@ def fetch_apt_candidates_by_addr(address):
         res.raise_for_status()
         data = res.json()
         if data.get("currentCount", 0) > 0:
-            return [{"단지명": d.get("HOUSE_NM",""), "주소": d.get("HSSPLY_ADRES",""), "분양일": d.get("RCRIT_PBLANC_DE","")} for d in data["data"]]
+            return [{"단지명": d.get("HOUSE_NM",""), "주소": d.get("HSSPLY_ADRES",""), "분양일": d.get("RCRIT_PBLANC_DE",""), "_raw": d} for d in data["data"]]
     return []
 
 def fetch_apt_cmpet(house_manage_no, pblanc_no):
@@ -470,6 +470,8 @@ if "kakao_candidates" not in st.session_state:
     st.session_state.kakao_candidates = []
 if "do_search" not in st.session_state:
     st.session_state.do_search = False
+if "selected_apt_info" not in st.session_state:
+    st.session_state.selected_apt_info = None
 
 def _extract_loc(addr):
     parts = addr.replace("특별자치도","").replace("특별시","").replace("광역시","").replace("특별자치시","").replace("전라북도","전북").replace("전라남도","전남").replace("경상북도","경북").replace("경상남도","경남").replace("충청북도","충북").replace("충청남도","충남").replace("강원특별자치도","강원").split()
@@ -532,7 +534,12 @@ if search_btn or auto_search:
 
         with st.spinner("청약홈 데이터 수집 중..."):
             try:
-                apt_info = fetch_apt_info(apt_name)
+                # 청약홈 후보 목록에서 직접 선택한 경우 API 재조회 불필요
+                if st.session_state.selected_apt_info:
+                    apt_info = st.session_state.selected_apt_info
+                    st.session_state.selected_apt_info = None
+                else:
+                    apt_info = fetch_apt_info(apt_name)
 
                 if not apt_info:
                     st.error(f"청약홈에서 '{apt_name}'을 찾을 수 없습니다. 분양 당시 등록명이 다를 수 있습니다.")
@@ -549,6 +556,7 @@ if search_btn or auto_search:
                             if c4.button("선택", key=f"cq_{cq['단지명']}"):
                                 st.session_state.apt_input = cq['단지명']
                                 st.session_state.loc_input = _extract_loc(cq['주소'])
+                                st.session_state.selected_apt_info = cq['_raw']
                                 st.session_state.do_search = True
                                 st.rerun()
                     else:
