@@ -441,6 +441,10 @@ if "selected_apt_name" not in st.session_state:
     st.session_state.selected_apt_name = ""
 if "selected_location" not in st.session_state:
     st.session_state.selected_location = ""
+if "location_input" not in st.session_state:
+    st.session_state.location_input = ""
+if "apt_name_input" not in st.session_state:
+    st.session_state.apt_name_input = ""
 
 with st.expander("주소 또는 단지명으로 아파트명 검색"):
     addr_col1, addr_col2 = st.columns([4, 1])
@@ -457,23 +461,22 @@ with st.expander("주소 또는 단지명으로 아파트명 검색"):
                 col_a, col_b = st.columns([3, 1])
                 col_a.markdown(f"**{c['아파트명']}** ({c['주소']})")
                 if col_b.button("선택", key=f"sel_{c['아파트명']}"):
-                    # 주소에서 시도·시군구·동 추출
                     parts = c['주소'].replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace("특별자치시", "").split()
                     loc = " ".join(parts[:3]) if len(parts) >= 3 else c['주소']
-                    st.session_state.selected_location = loc
-                    st.session_state.selected_apt_name = c['아파트명']
+                    st.session_state.location_input = loc
+                    st.session_state.apt_name_input = c['아파트명']
                     st.rerun()
         else:
             st.warning("검색 결과가 없습니다. 다른 주소나 단지명으로 시도해 보세요.")
 
-if st.session_state.selected_apt_name:
-    st.info(f"선택됨: **{st.session_state.selected_apt_name}** / {st.session_state.selected_location}  ※ 청약홈 등록명과 다를 수 있으니 검색 후 확인하세요.")
+if st.session_state.apt_name_input:
+    st.info(f"선택됨: **{st.session_state.apt_name_input}** / {st.session_state.location_input}  ※ 청약홈 등록명과 다를 수 있으니 검색 후 확인하세요.")
 
 col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
 with col1:
-    location = st.text_input("소재지", value=st.session_state.selected_location, placeholder="예: 대구 수성구 범어동")
+    location = st.text_input("소재지", key="location_input", placeholder="예: 대구 수성구 범어동")
 with col2:
-    apt_name = st.text_input("아파트명", value=st.session_state.selected_apt_name, placeholder="예: 범어자이")
+    apt_name = st.text_input("아파트명", key="apt_name_input", placeholder="예: 범어자이")
 with col3:
     area_options = ["59㎡", "74㎡", "84㎡", "101㎡", "114㎡", "직접입력"]
     area_select = st.selectbox("전용면적", area_options, index=2)
