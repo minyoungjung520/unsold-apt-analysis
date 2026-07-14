@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+import html
 import requests
 from datetime import date
 
@@ -560,7 +561,7 @@ _banner_name = (st.session_state.cq_selected_info or {}).get("HOUSE_NM", "") or 
 if _banner_name:
     st.markdown(
         f"<div style='background:#e8f0fe;border-left:4px solid #1428A0;padding:10px 14px;border-radius:6px;margin-bottom:8px'>"
-        f"<b style='color:#1428A0'>선택된 단지:</b> {_banner_name} ({st.session_state.cq_selected_loc})</div>",
+        f"<b style='color:#1428A0'>선택된 단지:</b> {html.escape(_banner_name)} ({html.escape(st.session_state.cq_selected_loc)})</div>",
         unsafe_allow_html=True
     )
 
@@ -645,7 +646,7 @@ if search_btn or cq_run:
 
                     st.header("단지 기본 정보")
                     c1, c2 = st.columns(2)
-                    c1.markdown(f"**최초 분양일자**<br>{분양일자}", unsafe_allow_html=True)
+                    c1.markdown(f"**최초 분양일자**<br>{html.escape(str(분양일자))}", unsafe_allow_html=True)
                     c2.markdown(f"**전체 세대수**<br>{전체세대수:,}세대", unsafe_allow_html=True)
                     st.caption(f"📍 {주소}")
 
@@ -681,8 +682,9 @@ if search_btn or cq_run:
                             else:
                                 row3[i+1].markdown("<span style='color:#1E90FF'>-</span>", unsafe_allow_html=True)
 
-                        sido_url = SIDO_LINKS.get(sido, f"https://www.google.com/search?q={sido}+{sigungu}+미분양현황")
-                        unsold_link = f"<a href='{sido_url}' target='_blank'>{sido}시청 홈페이지</a>"
+                        _q = requests.utils.quote(f"{sido} {sigungu} 미분양현황")
+                        sido_url = SIDO_LINKS.get(sido, f"https://www.google.com/search?q={_q}")
+                        unsold_link = f"<a href='{html.escape(sido_url, quote=True)}' target='_blank' rel='noopener noreferrer'>{html.escape(sido)}시청 홈페이지</a>"
 
                         row4 = st.columns(len(sizes) + 1)
                         row4[0].markdown("현 미분양")
@@ -742,7 +744,8 @@ if search_btn or cq_run:
                     dong = location_parts[2] if len(location_parts) > 2 else ""
                     if lawd_cd and dong:
                         st.header("인근 아파트 시세")
-                        st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{sido} {sigungu} {dong} · 84㎡ 기준 · 최근 3개월 실거래 · 거래건수 상위 5개</span>", unsafe_allow_html=True)
+                        _loc_disp = html.escape(f"{sido} {sigungu} {dong}")
+                        st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{_loc_disp} · 84㎡ 기준 · 최근 3개월 실거래 · 거래건수 상위 5개</span>", unsafe_allow_html=True)
                         area_low = target_area - 5
                         area_high = target_area + 5
                         with st.spinner("인근 시세 조회 중..."):
@@ -755,7 +758,7 @@ if search_btn or cq_run:
                             )
                             df_nearby = df_nearby[["아파트","전용면적(㎡)","거래금액","최근거래일","거래건수"]]
                             df_nearby.index = range(1, len(df_nearby) + 1)
-                            st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{sido} {sigungu} {dong} · {target_area:.0f}㎡ 기준(±5㎡) · 최근 3개월 실거래 · 거래건수 상위 5개</span>", unsafe_allow_html=True)
+                            st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{_loc_disp} · {target_area:.0f}㎡ 기준(±5㎡) · 최근 3개월 실거래 · 거래건수 상위 5개</span>", unsafe_allow_html=True)
                             st.dataframe(df_nearby, use_container_width=True)
                         else:
                             st.info(f"{dong} 내 {target_area:.0f}㎡ 근처 최근 실거래 내역이 없습니다.")
@@ -771,12 +774,14 @@ if search_btn or cq_run:
                         label_style = "font-size:1.15rem; font-weight:600; margin-bottom:4px"
                         value_style = "font-size:1.15rem; font-weight:700"
 
+                        _sido_e = html.escape(sido)
+                        _sigungu_e = html.escape(sigungu)
                         c1, c2 = st.columns(2)
-                        c1.markdown(f"<div style='{label_style}'>{sido} 전체 미분양</div><div style='{value_style}'>{sido_summary['전체세대수']:,}세대</div>", unsafe_allow_html=True)
+                        c1.markdown(f"<div style='{label_style}'>{_sido_e} 전체 미분양</div><div style='{value_style}'>{sido_summary['전체세대수']:,}세대</div>", unsafe_allow_html=True)
                         if target_data:
-                            c2.markdown(f"<div style='{label_style}'>{sigungu} 미분양</div><div style='{value_style}'>{target_data['미분양세대수']:,}세대</div>", unsafe_allow_html=True)
+                            c2.markdown(f"<div style='{label_style}'>{_sigungu_e} 미분양</div><div style='{value_style}'>{target_data['미분양세대수']:,}세대</div>", unsafe_allow_html=True)
 
-                        st.markdown(f"<div style='{label_style}; margin-top:16px'>{sido} 구·군별 미분양 현황</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='{label_style}; margin-top:16px'>{_sido_e} 구·군별 미분양 현황</div>", unsafe_allow_html=True)
                         import pandas as pd
                         df = pd.DataFrame(sido_summary["구별현황"])
                         df.columns = ["시군구", "미분양세대수"]
@@ -809,10 +814,10 @@ if search_btn or cq_run:
                     st.header("할인 판단 근거")
 
                     def blue_caption(text):
-                        st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{text}</span>", unsafe_allow_html=True)
+                        st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>{html.escape(str(text))}</span>", unsafe_allow_html=True)
 
                     def black_caption(text):
-                        st.markdown(f"<span style='color:#222222; font-size:0.85rem'>{text}</span>", unsafe_allow_html=True)
+                        st.markdown(f"<span style='color:#222222; font-size:0.85rem'>{html.escape(str(text))}</span>", unsafe_allow_html=True)
 
                     fallback_msg = lambda label: f"※ '{house_nm}' 직접 관련 {label}가 없어 {sido} {sigungu} 지역 결과를 표시합니다."
 
