@@ -294,12 +294,20 @@ def fetch_apt_info(apt_name):
     if data.get("currentCount", 0) == 0:
         return None
 
-    # 공백 무시 비교로 가장 근접한 항목 반환
-    for item in data["data"]:
-        nm = item.get("HOUSE_NM", "").replace(" ", "")
-        if nm == apt_name_nospace or apt_name_nospace in nm or nm in apt_name_nospace:
+    items = data["data"]
+    # 1순위: 공백 무시 완전 일치
+    for item in items:
+        if item.get("HOUSE_NM", "").replace(" ", "") == apt_name_nospace:
             return item
-    return data["data"][0]
+    # 2순위: 입력명이 등록명에 포함 (예: "범어자이" → "범어자이 2단지")
+    for item in items:
+        if apt_name_nospace in item.get("HOUSE_NM", "").replace(" ", ""):
+            return item
+    # 3순위: 등록명이 입력명에 포함 (예: 사용자가 더 길게 입력한 경우)
+    for item in items:
+        if item.get("HOUSE_NM", "").replace(" ", "") in apt_name_nospace:
+            return item
+    return items[0]
 
 def fetch_apt_candidates_by_addr(address):
     """주소로 청약홈 단지 후보 검색 (시군구+동 기준, 광역시도 제외)"""
