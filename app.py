@@ -1186,7 +1186,7 @@ st.divider()
 st.header("검색 이력")
 history = load_history()
 if history:
-    for i, record in enumerate(reversed(history[-10:])):
+    for i, record in enumerate(reversed(history[-5:])):
         with st.expander(f"{record['검색일']} — {record['소재지']} {record['단지명']}"):
             st.json(record)
 else:
