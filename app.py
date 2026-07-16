@@ -89,6 +89,51 @@ SIDO_LINKS = {
     "제주": "https://www.jeju.go.kr",
 }
 
+# 시군구 시청/군청 홈페이지 (미분양 통계는 대부분 기초지자체가 게시)
+SIGUNGU_LINKS = {
+    # 경기
+    "수원시": "https://www.suwon.go.kr", "성남시": "https://www.seongnam.go.kr",
+    "용인시": "https://www.yongin.go.kr", "고양시": "https://www.goyang.go.kr",
+    "화성시": "https://www.hscity.go.kr", "평택시": "https://www.pyeongtaek.go.kr",
+    "안산시": "https://www.ansan.go.kr", "안양시": "https://www.anyang.go.kr",
+    "남양주시": "https://www.nyj.go.kr", "김포시": "https://www.gimpo.go.kr",
+    "파주시": "https://www.paju.go.kr", "의정부시": "https://www.ui4u.go.kr",
+    "시흥시": "https://www.siheung.go.kr", "광명시": "https://www.gm.go.kr",
+    "하남시": "https://www.hanam.go.kr", "구리시": "https://www.guri.go.kr",
+    "군포시": "https://www.gunpo.go.kr",
+    # 강원
+    "춘천시": "https://www.chuncheon.go.kr", "원주시": "https://www.wonju.go.kr",
+    "강릉시": "https://www.gn.go.kr", "동해시": "https://www.dh.go.kr",
+    "속초시": "https://www.sokcho.go.kr", "삼척시": "https://www.samcheok.go.kr",
+    # 충북
+    "청주시": "https://www.cheongju.go.kr", "충주시": "https://www.chungju.go.kr",
+    "제천시": "https://www.jecheon.go.kr",
+    # 충남
+    "천안시": "https://www.cheonan.go.kr", "아산시": "https://www.asan.go.kr",
+    "서산시": "https://www.seosan.go.kr", "당진시": "https://www.dangjin.go.kr",
+    "공주시": "https://www.gongju.go.kr", "보령시": "https://www.brcn.go.kr",
+    # 전북
+    "전주시": "https://www.jeonju.go.kr", "군산시": "https://www.gunsan.go.kr",
+    "익산시": "https://www.iksan.go.kr", "정읍시": "https://www.jeongeup.go.kr",
+    "남원시": "https://www.namwon.go.kr", "김제시": "https://www.gimje.go.kr",
+    # 전남
+    "목포시": "https://www.mokpo.go.kr", "여수시": "https://www.yeosu.go.kr",
+    "순천시": "https://www.suncheon.go.kr", "나주시": "https://www.naju.go.kr",
+    "광양시": "https://www.gwangyang.go.kr",
+    # 경북
+    "포항시": "https://www.pohang.go.kr", "경주시": "https://www.gyeongju.go.kr",
+    "구미시": "https://www.gumi.go.kr", "안동시": "https://www.andong.go.kr",
+    "김천시": "https://www.gc.go.kr", "영주시": "https://www.yeongju.go.kr",
+    "상주시": "https://www.sangju.go.kr",
+    # 경남
+    "창원시": "https://www.changwon.go.kr", "진주시": "https://www.jinju.go.kr",
+    "김해시": "https://www.gimhae.go.kr", "양산시": "https://www.yangsan.go.kr",
+    "거제시": "https://www.geoje.go.kr", "통영시": "https://www.tongyeong.go.kr",
+    "사천시": "https://www.sacheon.go.kr",
+    # 제주
+    "제주시": "https://www.jejusi.go.kr", "서귀포시": "https://www.seogwipo.go.kr",
+}
+
 def fetch_kakao_apt_name(query):
     """주소 또는 아파트명으로 카카오 검색 → 후보 목록 반환"""
     headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
@@ -690,9 +735,16 @@ if search_btn or cq_run:
                             else:
                                 row3[i+1].markdown("<span style='color:#1E90FF'>-</span>", unsafe_allow_html=True)
 
+                        # 시군구 시청 우선 → 없으면 시도청 → 없으면 구글 검색
                         _q = requests.utils.quote(f"{sido} {sigungu} 미분양현황")
-                        sido_url = SIDO_LINKS.get(sido, f"https://www.google.com/search?q={_q}")
-                        unsold_link = f"<a href='{html.escape(sido_url, quote=True)}' target='_blank' rel='noopener noreferrer'>{html.escape(sido)}시청 홈페이지</a>"
+                        _sigungu_key = sigungu.split()[0] if sigungu else ""
+                        if _sigungu_key in SIGUNGU_LINKS:
+                            unsold_url = SIGUNGU_LINKS[_sigungu_key]
+                            unsold_label = f"{_sigungu_key}청 홈페이지"
+                        else:
+                            unsold_url = SIDO_LINKS.get(sido, f"https://www.google.com/search?q={_q}")
+                            unsold_label = f"{sido}시청 홈페이지"
+                        unsold_link = f"<a href='{html.escape(unsold_url, quote=True)}' target='_blank' rel='noopener noreferrer'>{html.escape(unsold_label)}</a>"
 
                         row4 = st.columns(len(sizes) + 1)
                         row4[0].markdown("현 미분양")
