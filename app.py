@@ -434,28 +434,40 @@ html, body, [class*="css"] {
 }
 
 /* 타이틀 */
-h1 { color: #1428A0 !important; font-size: 1.8rem !important; font-weight: 800 !important; }
+h1 {
+    color: #1428A0 !important;
+    font-size: 2.0rem !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.5px;
+    padding-bottom: 12px !important;
+    border-bottom: 3px solid #1428A0;
+    margin-bottom: 4px !important;
+}
 
-/* 섹션 헤더 */
+/* 섹션 헤더 — 파란 배경 바로 강조 */
 h2 {
-    color: #1a1a2e !important;
-    font-size: 1.15rem !important;
-    font-weight: 700 !important;
+    color: #ffffff !important;
+    font-size: 1.2rem !important;
+    font-weight: 800 !important;
     letter-spacing: -0.3px;
-    padding: 10px 0 8px 14px !important;
-    margin-top: 8px !important;
-    border-left: 4px solid #1428A0;
+    background: linear-gradient(90deg, #1428A0 0%, #2a44c8 100%);
+    padding: 10px 18px !important;
+    margin-top: 20px !important;
+    border-radius: 8px;
     border-bottom: none !important;
 }
 
-/* 서브헤더 */
+/* 서브헤더 — 진한 남색 + 왼쪽 포인트 바 */
 h3 {
-    color: #444 !important;
-    font-size: 0.97rem !important;
-    font-weight: 600 !important;
-    margin-top: 16px !important;
-    padding-bottom: 4px !important;
-    border-bottom: 1px solid #e8ecf8 !important;
+    color: #1428A0 !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    margin-top: 18px !important;
+    padding: 4px 0 4px 10px !important;
+    border-left: 4px solid #1428A0;
+    border-bottom: none !important;
+    background: #f0f4ff;
+    border-radius: 0 6px 6px 0;
 }
 
 /* 검색 버튼 */
@@ -497,6 +509,14 @@ button[kind="primary"]:hover {
     font-weight: 700 !important;
 }
 
+/* 입력란 라벨 — 진하고 선명하게 */
+[data-testid="stTextInput"] label p, [data-testid="stNumberInput"] label p,
+[data-testid="stSelectbox"] label p {
+    color: #1a1a2e !important;
+    font-weight: 700 !important;
+    font-size: 0.92rem !important;
+}
+
 /* 입력란 */
 [data-testid="stTextInput"] input, [data-testid="stNumberInput"] input {
     border-radius: 8px !important;
@@ -534,7 +554,7 @@ hr { border-color: #eef0f8 !important; }
 </style>
 """, unsafe_allow_html=True)
 st.title("🏙️ 미분양 아파트 감정가 적정성 분석")
-st.markdown("<p style='color:#666; font-size:0.95rem; margin-top:-12px'>소재지와 아파트명을 입력하면 미분양·시세·할인 근거를 자동 수집합니다.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color:#555; font-size:0.97rem; margin-top:6px'>소재지와 아파트명을 입력하면 미분양·시세·할인 근거를 자동 수집합니다.</p>", unsafe_allow_html=True)
 
 # 입력 섹션
 st.header("단지 정보 입력")
