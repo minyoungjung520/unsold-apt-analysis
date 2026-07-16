@@ -446,7 +446,7 @@ def fetch_apt_model(house_manage_no, pblanc_no):
     data = res.json()
     return data.get("data", [])
 
-st.set_page_config(page_title="미분양 아파트 감정가 적정성 분석", page_icon="🏙️", layout="wide")
+st.set_page_config(page_title="미분양 아파트 감정가 적정성 분석", page_icon="app_icon.png", layout="wide")
 st.markdown("""
 <style>
 /* 전체 폰트 */
