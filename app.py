@@ -537,6 +537,20 @@ button[kind="primary"]:hover {
     color: #1428A0 !important;
 }
 
+/* 주소 검색 expander — 연한 노란색 배경 */
+.st-key-addr_search_box [data-testid="stExpander"] {
+    background: #FFF9E0;
+    border: 1px solid #F0DC9A;
+    border-radius: 10px;
+}
+.st-key-addr_search_box [data-testid="stExpander"] summary {
+    background: #FFF9E0 !important;
+    border-radius: 10px;
+}
+.st-key-addr_search_box [data-testid="stExpander"] summary p {
+    color: #7A5C00 !important;
+}
+
 /* 성공/경고 메시지 */
 [data-testid="stAlert"] {
     border-radius: 10px !important;
@@ -603,7 +617,8 @@ with col5:
     search_btn = st.button("검색", type="primary", use_container_width=True)
 
 # ── 주소/단지명 검색 (단지가 조회가 안되는 경우) ──
-with st.expander("주소 또는 단지명으로 아파트명 검색 (단지가 조회가 안되는 경우)"):
+_addr_box = st.container(key="addr_search_box")
+with _addr_box, st.expander("주소 또는 단지명으로 아파트명 검색 (단지가 조회가 안되는 경우)"):
     addr_col1, addr_col2 = st.columns([4, 1])
     with addr_col1:
         address_input = st.text_input("주소 또는 단지명 입력", placeholder="주소 입력 — 예: 전북 군산시 지곡동 620", label_visibility="collapsed")
