@@ -784,7 +784,8 @@ if search_btn or cq_run:
                         row4 = st.columns(len(sizes) + 1)
                         row4[0].markdown("현 미분양")
                         row4[1].markdown(
-                            f"<span style='color:#888; white-space:nowrap'>확인 필요 → {unsold_link}</span>",
+                            f"<span style='color:#888; white-space:nowrap'>확인 필요 → {unsold_link}</span><br>"
+                            f"<span style='color:#888; font-size:0.82rem'>해당 자치구 홈페이지를 통해 정확한 정보를 확인하세요.</span>",
                             unsafe_allow_html=True
                         )
                         for i in range(1, len(sizes)):
@@ -867,7 +868,7 @@ if search_btn or cq_run:
                         st.markdown(f"<span style='color:#1428A0; font-size:0.85rem'>기준: {기준월_str} · 국토교통부 통계</span>", unsafe_allow_html=True)
 
                         label_style = "font-size:1.15rem; font-weight:600; margin-bottom:4px"
-                        value_style = "font-size:1.15rem; font-weight:700"
+                        value_style = "font-size:1.15rem; font-weight:700; color:#1428A0"
 
                         _sido_e = html.escape(sido)
                         _sigungu_e = html.escape(sigungu)
