@@ -784,8 +784,8 @@ if search_btn or cq_run:
                         row4 = st.columns(len(sizes) + 1)
                         row4[0].markdown("현 미분양")
                         row4[1].markdown(
-                            f"<span style='color:#888; white-space:nowrap'>확인 필요 → {unsold_link}</span><br>"
-                            f"<span style='color:#888; font-size:0.82rem'>해당 자치구 홈페이지를 통해 정확한 정보를 확인하세요.</span>",
+                            f"<span style='white-space:nowrap'><span style='color:#888'>확인 필요 → </span>{unsold_link}"
+                            f"<span style='color:#1428A0; font-size:0.82rem'> — 해당 자치구 홈페이지를 통해 정확한 정보를 확인하세요.</span></span>",
                             unsafe_allow_html=True
                         )
                         for i in range(1, len(sizes)):
